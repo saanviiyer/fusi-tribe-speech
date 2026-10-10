@@ -1,0 +1,22 @@
+# Raw data is not redistributed (see data/README.md)
+data/*
+!data/README.md
+
+# Large intermediate outputs; small summary results live in results/
+outputs/
+cache/
+*.nii
+*.nii.gz
+*.npy
+*.npz
+*.wav
+*.aiff
+
+# Python
+.venv*/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+outputs_tts_variant/

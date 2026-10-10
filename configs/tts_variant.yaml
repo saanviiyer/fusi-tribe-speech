@@ -1,0 +1,6 @@
+# Robustness check: identical pipeline on a second synthesis of the same passages.
+# macOS `say` is not bit-identical across runs; this run tests whether the
+# TRIBE conclusions depend on that variation.
+data_dir: data
+output_dir: outputs_tts_variant
+results_dir: results/robustness_tts_variant

@@ -1,0 +1,80 @@
+"""Run TRIBE v2 on the simulated runs.
+
+Modes
+    audio_only  audio pathway only (no transcription, no language model)
+    full        audio + WhisperX transcript + Llama-3.2-3B text features
+                (requires accepting the gated meta-llama/Llama-3.2-3B licence)
+
+Writes outputs/predictions/<mode>/<condition>.npz with `preds` (n_seconds,
+20484 fsaverage5 vertices) and `starts` (s); in full mode also the transcript
+TRIBE saw, which shows how much of each acoustic control the text pathway heard.
+"""
+
+from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from ..config import Config
+from .stimuli import md5
+
+MODES = ("audio_only", "full")
+
+
+def _device() -> str:
+    import torch
+    if torch.cuda.is_available():
+        return "cuda"
+    return "mps" if torch.backends.mps.is_available() else "cpu"
+
+
+def load_tribe(cache: Path, device: str | None = None):
+    from tribev2.demo_utils import TribeModel
+
+    device = device or _device()
+    # The released config hard-codes CUDA for every feature extractor, and the
+    # extractors only accept auto/cpu/cuda, so off-CUDA they run on the CPU.
+    ext = "cuda" if device == "cuda" else "cpu"
+    overrides = {f"data.{k}": ext for k in (
+        "text_feature.device", "audio_feature.device",
+        "image_feature.image.device", "video_feature.image.device")}
+    model = TribeModel.from_pretrained("facebook/tribev2", cache_folder=cache, device=device,
+                                       config_update=overrides)
+    model.remove_empty_segments = False   # keep silent seconds: same time axis for every run
+    return model, device
+
+
+def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Path:
+    from tribev2.demo_utils import get_audio_and_text_events
+
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {MODES}")
+    stim_dir = cfg.output_dir / "stimuli"
+    manifest = json.loads((stim_dir / "manifest.json").read_text())
+    out_dir = cfg.output_dir / "predictions" / mode
+    out_dir.mkdir(parents=True, exist_ok=True)
+    model, device = load_tribe(cfg.output_dir / "tribe_cache")
+
+    for cond in conditions or list(manifest["conditions"]):
+        t0 = time.time()
+        wav = stim_dir / manifest["conditions"][cond]["path"]
+        events = get_audio_and_text_events(
+            pd.DataFrame([{"type": "Audio", "filepath": str(wav), "start": 0,
+                           "timeline": cond, "subject": "default"}]),
+            audio_only=(mode == "audio_only"))
+        preds, segments = model.predict(events=events)
+        starts = np.array([s.start for s in segments], dtype=float)
+        order = np.argsort(starts)
+        np.savez_compressed(out_dir / f"{cond}.npz", preds=preds[order].astype(np.float32),
+                            starts=starts[order], stimulus_md5=md5(wav))
+        words = events[events.type == "Word"]
+        if len(words):
+            words[["start", "duration", "text"]].to_csv(out_dir / f"{cond}_words.tsv",
+                                                        sep="\t", index=False)
+        print(f"[{mode}] {cond}: {preds.shape[0]} s predicted, {len(words)} words transcribed, "
+              f"{time.time() - t0:.0f} s on {device}", flush=True)
+    return out_dir

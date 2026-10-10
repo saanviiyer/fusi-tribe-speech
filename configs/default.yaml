@@ -1,0 +1,45 @@
+# Paths are relative to the repository root.
+data_dir: data              # pwd.nii(.gz), logs.parquet, task_events.tsv
+output_dir: outputs         # large intermediates (registered data, predictions); git-ignored
+results_dir: results        # small figures and tables; committed
+
+fusi:
+  subject: Forest001
+  session: "20260414"
+  run_label: audio_no_hair
+  event_col: trial_type
+  # Censoring
+  initial_censor_frames: 0
+  global_signal_k: 4.0        # MAD multiplier for global-signal spikes
+  fd_thresh_mm: 0.5
+  fd_radius_mm: 50.0
+  # Temporal smoothing applied before the GLM: none | boxcar | savgol
+  smooth_method: boxcar
+  smooth_window: 3
+  # GLM
+  spatial_fwhm_mm: 2.0
+  hrf_model: glover + derivative
+  drift_model: cosine
+  high_pass_hz: 0.01
+  noise_model: ar1
+  # The original notebook shifted every onset by -1 TR ("legacy_one_tr").
+  # `fusi-tribe fusi-timing` shows that shift fits this run worse than no shift,
+  # so the default here is no shift.
+  onset_shift_s: 0.0
+  z_threshold: 3.1
+
+timing:
+  n_roi_voxels: 500
+  fir_lags: 15
+  shift_min_s: -6.0
+  shift_max_s: 6.0
+  shift_step_s: 0.2
+
+insilico:
+  voice: Samantha             # macOS `say` voice
+  rate_wpm: 140
+  sample_rate: 16000
+  tail_s: 20.0
+  conditions: [intact, lowpass, rotated, vocoded, reversed, silence]
+  tribe_offset_s: 5.0         # TRIBE config data.neuro.offset: row t predicts fMRI at t + 5 s
+  n_boot: 5000

@@ -1,0 +1,35 @@
+{
+  "run": "sub-Forest001_ses-20260414_audio_no_hair",
+  "n_frames": 254,
+  "tr_s": 1.6020373860000063,
+  "censored_global_signal": [
+    0,
+    118,
+    137,
+    159,
+    232
+  ],
+  "censored_fd": [],
+  "n_frames_in_glm": 249,
+  "max_fd_mm": 0.36607405918766744,
+  "onset_shift_s": 0.0,
+  "z_threshold": 3.1,
+  "contrasts": {
+    "audio_only": {
+      "peak_z": 7.514931862861138,
+      "volume_mm3_above_threshold": 766.9753830043044
+    },
+    "speech": {
+      "peak_z": 11.173652065067142,
+      "volume_mm3_above_threshold": 4946.247240729346
+    },
+    "audio_only_minus_speech": {
+      "peak_z": 4.299516644940766,
+      "volume_mm3_above_threshold": 19.478739885823604
+    },
+    "speech_minus_audio_only": {
+      "peak_z": 9.031879795447102,
+      "volume_mm3_above_threshold": 3339.6570072298537
+    }
+  }
+}

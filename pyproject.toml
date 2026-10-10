@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fusi-tribe-speech"
+version = "0.1.0"
+description = "Speech responses in functional ultrasound vs. in-silico predictions from the TRIBE v2 brain encoding model"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Saanvi Iyer" }]
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "pandas>=2.0",
+  "pyarrow",
+  "matplotlib>=3.8",
+  "nibabel>=5.0",
+  "nilearn>=0.11",
+  "SimpleITK>=2.3",
+  "soundfile",
+  "pyyaml",
+]
+
+[project.optional-dependencies]
+# TRIBE v2 pins torch<2.7 and numpy==2.2.6; everything above is compatible with both.
+tribe = ["tribev2 @ git+https://github.com/facebookresearch/tribev2.git"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+fusi-tribe = "fusi_tribe.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::FutureWarning",
+  # numpy 2.x on Apple Accelerate BLAS raises spurious floating-point flags in
+  # matmul even for well-conditioned random matrices; results are verified
+  # finite and identical to einsum.
+  "ignore:.*encountered in matmul:RuntimeWarning",
+]

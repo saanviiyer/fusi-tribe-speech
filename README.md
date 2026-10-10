@@ -153,3 +153,9 @@ The fUSI recording and the original preprocessing helpers (`fusiproc_utils3.py`,
 `fusi/preprocess.py`) were provided as lab sample data and are not redistributed here. TRIBE v2
 is © Meta Platforms, Inc. and used under its own licence. The speech passages in
 `insilico/passages.py` were written for this project.
+
+## License
+
+MIT for the code written for this project; see [LICENSE](LICENSE). `src/fusi_tribe/fusi/preprocess.py`
+adapts lab-provided helper code, and those portions remain subject to whatever terms the original
+authors set. TRIBE v2 and its model weights are under their own licences.

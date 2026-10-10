@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Speech responses in functional ultrasound vs. in-silico predictions from the TRIBE v2 brain encoding model"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
 authors = [{ name = "Saanvi Iyer" }]
 dependencies = [
   "numpy>=1.26",

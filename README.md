@@ -12,6 +12,10 @@ speech vs. non-speech block experiment and does two things with it:
    Meta's multimodal fMRI encoding model, using synthetic speech and classic acoustic controls
    to ask what the model's "speech areas" actually respond to.
 
+**[Explore the interactive results →](https://claude.ai/artifact/3DKQrjnk1do8h6GyYjMaRN)**
+Drag the onset shift to fit the ultrasound signal, compare response shapes, and switch acoustic
+controls to see what TRIBE treats as speech.
+
 ## Key findings
 
 **1. The fUSI response is later and broader than the fMRI model assumes. The original

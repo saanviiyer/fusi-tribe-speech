@@ -27,7 +27,8 @@ z-score for speech from about 9 to **11.2**.
 
 **2. TRIBE v2's audio pathway responds to how speech sounds, not to whether it is intelligible.**
 With the text pathway off, time-reversed speech (unintelligible, but with the same spectrum)
-drives every auditory and language region *more* than real speech does (+11 to +21%). Lateral
+drives every auditory and language region *more* than real speech does (+8 to +21% across two
+independent syntheses of the stimuli). Lateral
 STG is the region most sensitive to destroying spectral structure: noise vocoding cuts its
 response by 44%, and spectral rotation by 22% beyond a bandwidth-matched control.
 
@@ -49,6 +50,12 @@ the residual effect, concentrated in STG and STS, is attributable to rotation.
 
 *Change in retention (control response as a fraction of the speech response), paired over the
 same seven passages; 95% bootstrap intervals over passages.*
+
+**Robustness to the stimulus synthesis.** macOS text-to-speech is not bit-identical between runs,
+so the full TRIBE experiment was repeated on a second synthesis of the same passages
+(`configs/tts_variant.yaml`). The 15 paired effects correlate at r = 0.995 between the two runs;
+every effect keeps its sign, and significance agrees for 14 of 15. The exception is vocoded − intact
+in MTG, borderline in both. Tables: [results/robustness_tts_variant/](results/robustness_tts_variant/insilico/audio_only/).
 
 ## How it works
 

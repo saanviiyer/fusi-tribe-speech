@@ -83,7 +83,7 @@ Things that changed the analysis, in the order they came up.
 | 4 | Rotated speech is band-limited to 4 kHz | Spectrogram check | Added the `lowpass` control. Low-pass alone cuts TRIBE's STS/MTG response by 30–40%; most of the apparent rotation "hierarchy gradient" was bandwidth |
 | 5 | GLM-beta retention biased for silence (−0.1 to −0.2) | Silence blocks are physically identical to the gaps | Model-free window amplitudes; silence retention now 0 ± 0.07 |
 | 6 | TRIBE extractors hard-code CUDA | Crash on Apple Silicon | Config override; extractors on CPU, brain model on MPS |
-| 7 | macOS `say` is not bit-identical across runs | Checksums differ between syntheses | Passage audio cached; checksums in manifests and prediction files; TRIBE rerun on a second synthesis as a robustness check |
+| 7 | macOS `say` is not bit-identical across runs | Checksums differ between syntheses | Passage audio cached; checksums in manifests and prediction files. TRIBE rerun on a second synthesis: paired effects correlate r = 0.995, all signs agree, significance agrees 14/15 |
 | 8 | Spurious numpy matmul warnings | Raised on random well-conditioned matrices too; results equal `einsum` | Filtered in pytest config only |
 
 ## 4. Known limitations

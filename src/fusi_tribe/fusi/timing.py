@@ -9,7 +9,8 @@ every onset by -1 TR. Two data-driven checks instead:
 
 Both use an ROI picked by a timing-agnostic F-test on finite-impulse-response
 (FIR) regressors from half of the blocks, and a leave-one-block-out jackknife
-for uncertainty. Peak latency and an event-clock offset are not separable from
+for uncertainty. A cross-validated shift scan then measures timing only on the
+blocks that were *not* used to pick the voxels, in both directions. Peak latency and an event-clock offset are not separable from
 logged onsets alone; everything is reported relative to the logged onsets.
 """
 
@@ -139,6 +140,15 @@ def leave_block_out_masks(events, frame_times_rows, tail_s: float = 12.0) -> lis
             for ev in events.itertuples()]
 
 
+def held_out_mask(events, half, selection_half: str, frame_times_rows, tail_s: float = 12.0) -> np.ndarray:
+    """Frames outside every block window of `selection_half` (shared baseline kept)."""
+    keep = np.ones(frame_times_rows.size, bool)
+    for ev, h in zip(events.itertuples(), half):
+        if h == selection_half:
+            keep &= ~((frame_times_rows >= ev.onset) & (frame_times_rows < ev.onset + ev.duration + tail_s))
+    return keep
+
+
 def jackknife_se(x) -> float:
     x = np.asarray(x, float)
     return float(np.sqrt((x.size - 1) / x.size * ((x - x.mean()) ** 2).sum()))
@@ -229,6 +239,25 @@ def run_timing(cfg: Config) -> dict:
     glover = glover_hrf(DT, oversampling=1, time_length=40.0)[: t_fine.size]
     legacy = -tr
 
+    # Cross-validated: pick voxels on one half, measure timing on the other half's blocks.
+    cross = {}
+    shared = np.intersect1d(fits["A"].roi, fits["B"].roi)
+    for sel in "AB":
+        keep = held_out_mask(events, half, sel, ft_rows)
+        for name, voxels in ((f"roi_{sel}", fits[sel].roi), ("roi_shared", shared)):
+            y = Y[:, voxels].mean(axis=1)
+            r2_cv = shift_scan(y, events, frame_times, rows, X_nuis, shifts, keep)
+            jk_cv = [shifts[np.argmax(shift_scan(y, events, frame_times, rows, X_nuis, shifts, keep & k))]
+                     for k in lbo]
+            cross[f"select_{sel}_measure_{'B' if sel == 'A' else 'A'}_{name}"] = {
+                "n_voxels": int(voxels.size), "n_frames": int(keep.sum()),
+                "best_shift_s": float(shifts[np.argmax(r2_cv)]),
+                "best_shift_jackknife_se_s": jackknife_se(jk_cv),
+                "r2_best": float(r2_cv.max()),
+                "r2_no_shift": float(np.interp(0.0, shifts, r2_cv)),
+                "r2_legacy_minus_one_tr": float(np.interp(legacy, shifts, r2_cv)),
+            }
+
     summary = {
         "roi_voxels": tc.n_roi_voxels,
         "roi_overlap_A_B": float(np.intersect1d(fits["A"].roi, fits["B"].roi).size / tc.n_roi_voxels),
@@ -241,6 +270,7 @@ def run_timing(cfg: Config) -> dict:
             "r2_no_shift": float(np.interp(0.0, shifts, r2)),
             "r2_legacy_minus_one_tr": float(np.interp(legacy, shifts, r2)),
         },
+        "cross_validated_shift": cross,
     }
     (res / "timing_summary.json").write_text(json.dumps(summary, indent=2))
 

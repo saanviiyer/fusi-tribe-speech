@@ -32,6 +32,47 @@ def _device() -> str:
     return "mps" if torch.backends.mps.is_available() else "cpu"
 
 
+def transcribe(wav: Path, language: str = "english", device: str | None = None) -> pd.DataFrame:
+    """WhisperX word transcript, as TRIBE's ExtractWordsFromAudio produces it.
+
+    TRIBE runs `uvx whisperx ... --compute_type float16`, which the CPU backend
+    rejects. This is the same call with int8 off-CUDA, using the `uvx` installed
+    next to this Python.
+    """
+    import os
+    import subprocess
+    import sys
+    import tempfile
+
+    import torch
+
+    codes = {"english": "en", "french": "fr", "spanish": "es", "dutch": "nl", "chinese": "zh"}
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    uvx = Path(sys.executable).with_name("uvx")
+    with tempfile.TemporaryDirectory() as out:
+        cmd = [str(uvx if uvx.exists() else "uvx"), "whisperx", str(wav), "--model", "large-v3",
+               "--language", codes[language], "--device", device,
+               "--compute_type", "float16" if device == "cuda" else "int8", "--batch_size", "16",
+               "--output_dir", out, "--output_format", "json"]
+        if language == "english":
+            cmd += ["--align_model", "WAV2VEC2_ASR_LARGE_LV60K_960H"]
+        env = {k: v for k, v in os.environ.items() if k != "MPLBACKEND"}
+        res = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if res.returncode != 0:
+            raise RuntimeError(f"whisperx failed:\n{res.stderr[-3000:]}")
+        transcript = json.loads((Path(out) / f"{wav.stem}.json").read_text())
+    words = [{"text": w["word"].replace('"', ""), "start": w["start"], "duration": w["end"] - w["start"],
+              "sequence_id": i, "sentence": seg["text"].replace('"', "")}
+             for i, seg in enumerate(transcript["segments"]) for w in seg["words"] if "start" in w]
+    return pd.DataFrame(words)
+
+
+def _use_cpu_friendly_transcription() -> None:
+    from tribev2.eventstransforms import ExtractWordsFromAudio
+    ExtractWordsFromAudio._get_transcript_from_audio = staticmethod(
+        lambda wav_filename, language: transcribe(Path(wav_filename), language))
+
+
 def load_tribe(cache: Path, device: str | None = None):
     from tribev2.demo_utils import TribeModel
 
@@ -58,6 +99,8 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
     out_dir = cfg.output_dir / "predictions" / mode
     out_dir.mkdir(parents=True, exist_ok=True)
     model, device = load_tribe(cfg.output_dir / "tribe_cache")
+    if mode == "full" and device != "cuda":
+        _use_cpu_friendly_transcription()
 
     for cond in conditions or list(manifest["conditions"]):
         t0 = time.time()

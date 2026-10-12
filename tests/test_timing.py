@@ -73,3 +73,18 @@ def test_split_halves_alternates_within_condition(paradigm):
     half = tm.split_halves(events)
     for c in tm.CONDS:
         assert "".join(half[events.trial_type.to_numpy() == c]).startswith("ABAB")
+
+
+def test_held_out_mask_drops_only_selection_half_windows(paradigm):
+    events, ft, _ = paradigm
+    half = tm.split_halves(events)
+    keep = tm.held_out_mask(events, half, "A", ft, tail_s=12.0)
+    in_a = np.zeros(ft.size, bool)
+    for ev, h in zip(events.itertuples(), half):
+        if h == "A":
+            in_a |= (ft >= ev.onset) & (ft < ev.onset + ev.duration + 12.0)
+    np.testing.assert_array_equal(keep, ~in_a)
+    # Every held-out (B) block still contributes frames.
+    for ev, h in zip(events.itertuples(), half):
+        if h == "B":
+            assert keep[(ft >= ev.onset) & (ft < ev.onset + ev.duration + 12.0)].any()

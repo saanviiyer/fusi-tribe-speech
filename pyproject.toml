@@ -25,7 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # TRIBE v2 pins torch<2.7 and numpy==2.2.6; everything above is compatible with both.
-tribe = ["tribev2 @ git+https://github.com/facebookresearch/tribev2.git"]
+tribe = ["tribev2 @ git+https://github.com/facebookresearch/tribev2.git", "uv"]  # uv provides `uvx`, which TRIBE uses to run WhisperX
 dev = ["pytest>=8"]
 
 [project.scripts]

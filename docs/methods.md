@@ -29,6 +29,9 @@ the NIfTI header's TR (1.0 s) is wrong and is not used.
   (2–16 s), grid search. Reported as the response **centroid** (centre of mass), which block
   designs constrain much better than the peak.
 - *Uncertainty.* Leave-one-block-out jackknife (each block plus 12 s after it removed).
+- *Cross-validation.* Voxels are chosen on one half of the blocks and the shift scan is run only
+  on frames outside that half's block windows (shared baseline kept), in both directions, for
+  each half's ROI and for the voxels both halves select.
 
 An unconstrained FIR deconvolution was tried first and abandoned: with block designs, adjacent
 FIR lags are nearly collinear and the estimates zig-zag; the two halves of the data disagreed.
@@ -85,6 +88,8 @@ Things that changed the analysis, in the order they came up.
 | 6 | TRIBE extractors hard-code CUDA | Crash on Apple Silicon | Config override; extractors on CPU, brain model on MPS |
 | 7 | macOS `say` is not bit-identical across runs | Checksums differ between syntheses | Passage audio cached; checksums in manifests and prediction files. TRIBE rerun on a second synthesis: paired effects correlate r = 0.995, all signs agree, significance agrees 14/15 |
 | 8 | Spurious numpy matmul warnings | Raised on random well-conditioned matrices too; results equal `einsum` | Filtered in pytest config only |
+| 9 | ROI chosen from half B fits poorly (R² 0.15 vs 0.57) | Shared voxels fit as well as ROI A (0.52); the other 238 carry a start-of-run transient and half-B blocks respond weakly even in ROI A. Dropping the first 10 s or FDR selection did not help | Kept the fixed-count ROI; added held-out timing checks: best shift +2.4 to +3.4 s for every well-fitting ROI, −1 TR worst in all four |
+| 10 | TRIBE's transcription fails on CPU | `uvx whisperx --compute_type float16` is rejected by the CPU backend; `uvx` was not installed | `uv` added to the environment; `insilico/tribe.py` runs the same WhisperX call with int8 off CUDA |
 
 ## 4. Known limitations
 

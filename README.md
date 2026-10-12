@@ -27,6 +27,23 @@ original shift. Fitting the response shape directly, its centre of mass falls **
 after the logged onset, against 5.3 s for the fMRI model. Removing the shift raises the peak
 z-score for speech from about 9 to **11.2**.
 
+The timing holds on blocks the voxel selection never saw. Choosing voxels from one half of the
+blocks and measuring timing only on the other half gives best shifts of **+2.4 to +3.4 s** for
+every well-fitting ROI. In all four held-out checks, the original −1 TR shift fits worst of the
+three options.
+
+| Voxels chosen on | Timing measured on | Best shift | R² best / no shift / −1 TR |
+|---|---|---|---|
+| half A (500 voxels) | half B blocks | +3.4 ± 1.4 s | 0.47 / 0.26 / 0.11 |
+| half A ∩ half B (262 voxels) | half B blocks | +3.2 ± 1.3 s | 0.51 / 0.26 / 0.09 |
+| half A ∩ half B (262 voxels) | half A blocks | +2.4 ± 0.9 s | 0.51 / 0.42 / 0.30 |
+| half B (500 voxels) | half A blocks | +5.0 ± 1.6 s | 0.09 / 0.00 / 0.00 |
+
+The half-B ROI fits poorly because the half-B blocks drive weaker responses, even in the half-A
+voxels. Its 238 voxels outside the shared set carry a start-of-run transient instead of a block
+response (R² 0.23 against 0.52 for the shared voxels). Discarding the first 10 s or selecting
+voxels by false-discovery rate instead of a fixed count did not change this.
+
 ![Timing comparison](results/timing_comparison.png)
 
 **2. TRIBE v2's audio pathway responds to how speech sounds, not to whether it is intelligible.**
@@ -91,7 +108,7 @@ Methods, the full decision log and the limitations are in [docs/methods.md](docs
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make install          # package + TRIBE v2 + pytest
-make test             # 31 unit tests, no data needed (~10 s)
+make test             # 32 unit tests, no data needed (~10 s)
 make all              # needs the run in data/ (see data/README.md); ~1.5 h on an M-series Mac
 ```
 
@@ -133,8 +150,6 @@ The tests plant known effects in synthetic data and check that the analysis reco
 - **Text pathway (full TRIBE).** The prediction to test: if intelligibility comes from the
   language model, adding the text pathway should *lower* retention of reversed speech in STS,
   MTG and IFG, but not in HG.
-- **Second half of the fUSI blocks.** The ROI chosen from it fits poorly (R² 0.15 vs 0.57); next
-  step is to find out why.
 
 ## Repository layout
 

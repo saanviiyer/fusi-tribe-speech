@@ -44,9 +44,11 @@ def main(argv: list[str] | None = None) -> None:
         r = out["retention"]
         print(r[r.reliable].pivot(index="roi", columns="condition", values="retention").dropna().round(2))
     elif args.step == "report":
-        from .report import stimulus_spectrograms, timing_comparison
+        from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)
         timing_comparison(cfg)
+        if not mode_comparison(cfg):
+            print("Full-mode results not found; skipped the audio-only vs full comparison")
 
 
 if __name__ == "__main__":

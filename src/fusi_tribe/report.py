@@ -1,4 +1,5 @@
-"""Cross-modality figures: response timing (fUSI vs TRIBE vs Glover) and stimuli."""
+"""Cross-modality figures: response timing (fUSI vs TRIBE vs Glover), stimuli, and
+TRIBE audio-only vs full (text) mode."""
 
 from __future__ import annotations
 
@@ -9,6 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import soundfile as sf
 from nilearn.glm.first_level.hemodynamic_models import glover_hrf
 from scipy.signal import spectrogram
@@ -58,3 +60,39 @@ def stimulus_spectrograms(cfg: Config, show_s: float = 4.0) -> None:
     (cfg.results_dir / "insilico").mkdir(parents=True, exist_ok=True)
     fig.savefig(cfg.results_dir / "insilico" / "stimulus_spectrograms.png", dpi=160)
     plt.close(fig)
+
+
+def mode_comparison(cfg: Config) -> bool:
+    """Retention per region in audio-only vs full mode, one panel per acoustic control.
+
+    Returns False (and draws nothing) until both modes have been analysed.
+    """
+    paths = {m: cfg.results_dir / "insilico" / m / "retention.tsv" for m in ("audio_only", "full")}
+    if not all(p.exists() for p in paths.values()):
+        return False
+    df = pd.concat([pd.read_csv(p, sep="\t") for p in paths.values()])
+    rois = ["HG", "PT", "STG", "STS", "MTG", "IFG"]
+    conds = ["reversed", "rotated", "vocoded", "lowpass"]
+    styles = {"audio_only": ("#7f8c8d", "o", "audio pathway only"),
+              "full": ("#14707c", "s", "audio + text (Llama 3.2)")}
+    fig, axes = plt.subplots(1, len(conds), figsize=(4 * len(conds), 3.8), sharey=True,
+                             layout="constrained")
+    x = np.arange(len(rois))
+    for ax, cond in zip(axes, conds):
+        for k, (mode, (color, marker, label)) in enumerate(styles.items()):
+            sub = df[(df["mode"] == mode) & (df.condition == cond)].set_index("roi").reindex(rois)
+            sub = sub.where(sub.reliable.astype(bool))
+            off = (k - 0.5) * 0.18
+            ax.errorbar(x + off, sub.retention, yerr=[sub.retention - sub.ci_lo, sub.ci_hi - sub.retention],
+                        color=color, marker=marker, lw=1.4, capsize=2, label=label)
+        ax.axhline(1, color="grey", lw=0.8, ls="--")
+        ax.axhline(0, color="grey", lw=0.8)
+        ax.set_xticks(x, rois)
+        ax.set_title(cond)
+        ax.set_ylim(-0.3, 1.8)
+    axes[0].set_ylabel("Retention (control / speech response)")
+    axes[0].legend(frameon=False, fontsize=8, loc="upper left")
+    fig.suptitle("Does adding the text pathway make TRIBE sensitive to intelligibility?")
+    fig.savefig(cfg.results_dir / "insilico" / "mode_comparison.png", dpi=200)
+    plt.close(fig)
+    return True

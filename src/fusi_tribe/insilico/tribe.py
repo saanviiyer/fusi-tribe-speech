@@ -121,3 +121,46 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
         print(f"[{mode}] {cond}: {preds.shape[0]} s predicted, {len(words)} words transcribed, "
               f"{time.time() - t0:.0f} s on {device}", flush=True)
     return out_dir
+
+
+def transcription_summary(cfg: Config) -> pd.DataFrame:
+    """What the text pathway would hear: WhisperX words per block type and condition.
+
+    `matched` counts control-block words that occur in the passage actually
+    spoken there; intact speech is the reference for how many words exist.
+    """
+    import re
+
+    from .passages import PASSAGES
+
+    stim = cfg.output_dir / "stimuli"
+    out = cfg.output_dir / "transcripts"
+    out.mkdir(parents=True, exist_ok=True)
+    manifest = json.loads((stim / "manifest.json").read_text())
+    norm = lambda w: re.sub(r"[^a-z']", "", str(w).lower())
+    rows = []
+    for cond, info in manifest["conditions"].items():
+        path = out / f"{cond}.tsv"
+        if path.exists():
+            words = pd.read_csv(path, sep="\t")
+        else:
+            words = transcribe(stim / info["path"])
+            words.to_csv(path, sep="\t", index=False)
+        n_speech = n_control = matched = 0
+        for b in info["blocks"]:
+            w = words[(words.start >= b["onset"]) & (words.start < b["onset"] + b["duration"])]
+            if b["trial_type"] == "Speech":
+                n_speech += len(w)
+            else:
+                truth = {norm(x) for x in PASSAGES[b["passage"]].split()}
+                n_control += len(w)
+                matched += sum(1 for x in map(norm, w.text) if x and x in truth)
+        rows.append({"condition": cond, "speech_block_words": n_speech,
+                     "control_block_words": n_control, "control_words_matching_passage": matched})
+    df = pd.DataFrame(rows)
+    ref = df.loc[df.condition == "intact", "control_words_matching_passage"]
+    if len(ref):
+        df["fraction_of_intact_words_recovered"] = (df.control_words_matching_passage / ref.iloc[0]).round(3)
+    (cfg.results_dir / "insilico").mkdir(parents=True, exist_ok=True)
+    df.to_csv(cfg.results_dir / "insilico" / "transcription.tsv", sep="\t", index=False)
+    return df

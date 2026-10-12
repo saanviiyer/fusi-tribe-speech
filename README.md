@@ -147,9 +147,21 @@ The tests plant known effects in synthetic data and check that the analysis reco
 
 ## In progress
 
-- **Text pathway (full TRIBE).** The prediction to test: if intelligibility comes from the
-  language model, adding the text pathway should *lower* retention of reversed speech in STS,
-  MTG and IFG, but not in HG.
+- **Text pathway (full TRIBE).** In full mode TRIBE transcribes the audio with WhisperX and feeds
+  the words to Llama 3.2. The transcripts are already in
+  ([results/insilico/transcription.tsv](results/insilico/transcription.tsv)):
+
+  | Control | Words recovered from the real passage |
+  |---|---|
+  | lowpass | 100% |
+  | vocoded (4 channels) | 92% |
+  | reversed | 10% |
+  | rotated | 4% |
+
+  So the text pathway will receive the real words for vocoded speech, but mostly noise for
+  reversed and rotated speech. The prediction: adding text should raise vocoded retention in
+  STS, MTG and IFG and leave reversed and rotated retention low there, with little change in HG.
+  This runs as soon as access to the gated Llama 3.2 model is granted.
 
 ## Repository layout
 

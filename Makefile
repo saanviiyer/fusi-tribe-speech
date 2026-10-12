@@ -27,10 +27,12 @@ insilico:
 	$(CLI) analyze-tribe --mode audio_only
 
 tribe-full:
+	$(CLI) transcribe
 	$(CLI) run-tribe --mode full
 	$(CLI) analyze-tribe --mode full
 
 all: fusi insilico
+	$(CLI) transcribe
 	$(CLI) report
 
 clean:

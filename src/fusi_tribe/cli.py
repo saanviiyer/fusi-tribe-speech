@@ -20,6 +20,7 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("run-tribe", help="TRIBE v2 predictions for each simulated run")
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
     p.add_argument("--conditions", nargs="+")
+    sub.add_parser("transcribe", help="What TRIBE's text pathway hears in each control (WhisperX)")
     p = sub.add_parser("analyze-tribe", help="Retention, paired contrasts and timing from predictions")
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
     sub.add_parser("report", help="Cross-modality figures")
@@ -38,6 +39,9 @@ def main(argv: list[str] | None = None) -> None:
     elif args.step == "run-tribe":
         from .insilico.tribe import run_tribe
         run_tribe(cfg, args.mode, args.conditions)
+    elif args.step == "transcribe":
+        from .insilico.tribe import transcription_summary
+        print(transcription_summary(cfg).to_string(index=False))
     elif args.step == "analyze-tribe":
         from .insilico.analysis import analyse_mode
         out = analyse_mode(cfg, args.mode)

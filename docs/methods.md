@@ -90,6 +90,7 @@ Things that changed the analysis, in the order they came up.
 | 8 | Spurious numpy matmul warnings | Raised on random well-conditioned matrices too; results equal `einsum` | Filtered in pytest config only |
 | 9 | ROI chosen from half B fits poorly (R² 0.15 vs 0.57) | Shared voxels fit as well as ROI A (0.52); the other 238 carry a start-of-run transient and half-B blocks respond weakly even in ROI A. Dropping the first 10 s or FDR selection did not help | Kept the fixed-count ROI; added held-out timing checks: best shift +2.4 to +3.4 s for every well-fitting ROI, −1 TR worst in all four |
 | 10 | TRIBE's transcription fails on CPU | `uvx whisperx --compute_type float16` is rejected by the CPU backend; `uvx` was not installed | `uv` added to the environment; `insilico/tribe.py` runs the same WhisperX call with int8 off CUDA |
+| 11 | Llama 3.2 text features unusably slow on a 24 GB Mac | CPU: 4–12 min per batch; MPS: 45–75 s per batch with the system swapping (~60 h for six runs) | Full mode moved to a Colab T4 (`notebooks/run_full_mode_colab.ipynb`). On GPUs under 20 GB, and on MPS, Llama runs in float16 (neuralset's own `accelerate` precision); TRIBE's released config computes text features in float32 on CUDA |
 
 ## 4. Known limitations
 

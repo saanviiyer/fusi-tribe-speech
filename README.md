@@ -116,9 +116,11 @@ Or run single steps: `fusi-tribe fusi-glm`, `fusi-tribe fusi-timing`, `fusi-trib
 `fusi-tribe run-tribe --mode audio_only`, `fusi-tribe analyze-tribe --mode audio_only`,
 `fusi-tribe report`. All settings are in [configs/default.yaml](configs/default.yaml).
 
-Requirements: Python ≥ 3.11. Stimulus synthesis uses macOS `say`. TRIBE v2 runs on CUDA, on
-Apple Silicon (MPS, with feature extractors on CPU), or on CPU. The full text pathway needs
-access to the gated [meta-llama/Llama-3.2-3B](https://huggingface.co/meta-llama/Llama-3.2-3B).
+Requirements: Python ≥ 3.11. Stimulus synthesis uses macOS `say`. TRIBE v2's audio pathway runs
+on CUDA, on Apple Silicon (MPS, with feature extractors on CPU), or on CPU. The full text pathway
+needs access to the gated [meta-llama/Llama-3.2-3B](https://huggingface.co/meta-llama/Llama-3.2-3B)
+and, in practice, an NVIDIA GPU; the [Colab notebook](notebooks/run_full_mode_colab.ipynb) runs it
+on a free T4.
 
 ### What the tests check
 
@@ -161,7 +163,9 @@ The tests plant known effects in synthetic data and check that the analysis reco
   So the text pathway will receive the real words for vocoded speech, but mostly noise for
   reversed and rotated speech. The prediction: adding text should raise vocoded retention in
   STS, MTG and IFG and leave reversed and rotated retention low there, with little change in HG.
-  This runs as soon as access to the gated Llama 3.2 model is granted.
+  Llama 3.2 is too slow and memory-hungry for a 24 GB laptop, so this step runs on a free Colab
+  GPU: [notebooks/run_full_mode_colab.ipynb](notebooks/run_full_mode_colab.ipynb)
+  ([open in Colab](https://colab.research.google.com/github/saanviiyer/fusi-tribe-speech/blob/main/notebooks/run_full_mode_colab.ipynb)).
 
 ## Repository layout
 

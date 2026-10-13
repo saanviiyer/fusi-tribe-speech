@@ -73,6 +73,42 @@ def _use_cpu_friendly_transcription() -> None:
         lambda wav_filename, language: transcribe(Path(wav_filename), language))
 
 
+def _text_model_on_mps() -> None:
+    """Run the Llama text extractor on Apple's GPU in float16.
+
+    On CPU, Llama-3.2-3B word embeddings take minutes per batch (hundreds of
+    hours per run on a 24 GB Mac). neuralset's own "accelerate" mode loads the
+    model in float16 but then sends inputs to the CPU off CUDA, so instead the
+    extractor stays configured as "cpu", the loaded model is moved to MPS in
+    float16 (the precision of neuralset's accelerate path), and a pre-forward
+    hook moves each batch's inputs to the model's device.
+    """
+    import torch
+    from neuralset.extractors.text import HuggingFaceText
+
+    original = HuggingFaceText._load_model
+    if getattr(original, "_fusi_tribe_mps", False):
+        return
+
+    def to_device(obj, device):
+        if torch.is_tensor(obj):
+            return obj.to(device)
+        if isinstance(obj, dict):
+            return {k: to_device(v, device) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return type(obj)(to_device(v, device) for v in obj)
+        return obj
+
+    def load_on_mps(self, **kwargs):
+        model = original(self, **kwargs).to(device="mps", dtype=torch.float16)
+        model.register_forward_pre_hook(
+            lambda _m, args, kw: (to_device(args, "mps"), to_device(kw, "mps")), with_kwargs=True)
+        return model
+
+    load_on_mps._fusi_tribe_mps = True
+    HuggingFaceText._load_model = load_on_mps
+
+
 def load_tribe(cache: Path, device: str | None = None):
     from tribev2.demo_utils import TribeModel
 
@@ -83,6 +119,12 @@ def load_tribe(cache: Path, device: str | None = None):
     overrides = {f"data.{k}": ext for k in (
         "text_feature.device", "audio_feature.device",
         "image_feature.image.device", "video_feature.image.device")}
+    if device == "cuda":
+        import torch
+        if torch.cuda.get_device_properties(0).total_memory < 20e9:
+            # Llama-3.2-3B in float32 (12.8 GB) plus the audio model does not fit a
+            # 16 GB GPU (e.g. a Colab T4); neuralset's "accelerate" mode loads it in float16.
+            overrides["data.text_feature.device"] = "accelerate"
     model = TribeModel.from_pretrained("facebook/tribev2", cache_folder=cache, device=device,
                                        config_update=overrides)
     model.remove_empty_segments = False   # keep silent seconds: same time axis for every run
@@ -101,6 +143,8 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
     model, device = load_tribe(cfg.output_dir / "tribe_cache")
     if mode == "full" and device != "cuda":
         _use_cpu_friendly_transcription()
+        if device == "mps":
+            _text_model_on_mps()
 
     for cond in conditions or list(manifest["conditions"]):
         t0 = time.time()

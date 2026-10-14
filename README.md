@@ -78,6 +78,30 @@ so the full TRIBE experiment was repeated on a second synthesis of the same pass
 every effect keeps its sign, and significance agrees for 14 of 15. The exception is vocoded − intact
 in MTG, borderline in both. Tables: [results/robustness_tts_variant/](results/robustness_tts_variant/insilico/audio_only/).
 
+**4. Giving TRIBE the words restores its response to intelligible speech, but does not
+penalise unintelligible speech.** In full mode, TRIBE transcribes the audio with WhisperX and
+adds Llama 3.2 features of the words. The transcriber recovers 100% of the words from low-passed
+speech, 92% from 4-channel vocoded speech, 10% from reversed and 4% from rotated speech. Adding
+the words raises retention where the words come through, and barely changes it where they don't:
+
+| Region | lowpass (100% of words) | vocoded (92%) | reversed (10%) | rotated (4%) | intact (null) |
+|---|---|---|---|---|---|
+| HG | +0.06 [+0.01, +0.13] | **+0.17** [+0.12, +0.25] | +0.03 [−0.03, +0.10] | +0.03 [−0.03, +0.11] | −0.02 |
+| STG | +0.11 [+0.04, +0.19] | **+0.32** [+0.26, +0.39] | +0.01 [−0.09, +0.11] | +0.05 [−0.03, +0.16] | −0.00 |
+| STS | **+0.22** [+0.06, +0.39] | **+0.32** [+0.20, +0.45] | −0.02 [−0.17, +0.13] | +0.08 [−0.02, +0.22] | +0.04 |
+| MTG | **+0.29** [+0.03, +0.54] | **+0.25** [+0.10, +0.40] | +0.11 [−0.10, +0.34] | +0.11 [+0.01, +0.24] | +0.09 |
+
+*Change in retention from audio-only to audio + text mode, paired over passages; 95% bootstrap
+intervals.*
+
+With the words, vocoded speech drives STS as strongly as real speech (retention 1.01), and the
+low-pass deficit in STS and MTG mostly disappears. Reversed speech still drives STS and MTG at
+least as strongly as real speech (1.05 and 1.16). In this model, intelligibility adds to the
+response but does not gate it: a human-like "speech area" would respond less to reversed speech.
+IFG has no measurable predicted speech response in either mode, so it cannot be assessed here.
+
+![Audio-only vs full mode](results/insilico/mode_comparison.png)
+
 ## How it works
 
 ```
@@ -108,7 +132,7 @@ Methods, the full decision log and the limitations are in [docs/methods.md](docs
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make install          # package + TRIBE v2 + pytest
-make test             # 32 unit tests, no data needed (~10 s)
+make test             # 34 unit tests, no data needed (~40 s)
 make all              # needs the run in data/ (see data/README.md); ~1.5 h on an M-series Mac
 ```
 
@@ -134,6 +158,9 @@ The tests plant known effects in synthetic data and check that the analysis reco
   baseline offset
 - the stimuli: rotation maps *f* → 4 kHz − *f*, low-pass and rotation share a band, the vocoder
   keeps the envelope but removes harmonics
+- held-out timing: the cross-validation mask drops exactly the selection half's block windows
+- transcript placement: each audio chunk gets only its own words, on the global clock (guards
+  the tribev2 chunking bug fixed here)
 
 ## Limitations
 
@@ -144,28 +171,10 @@ The tests plant known effects in synthetic data and check that the analysis reco
   are compared on timing and selectivity only.
 - **Model, not brains.** The TRIBE results describe the model's predictions for one synthetic
   voice and 14 passages. They are hypotheses about cortex, not measurements of it.
+- **IFG not testable.** TRIBE predicts essentially no IFG response to these narrative blocks, with
+  or without text, so frontal language effects cannot be measured in this design.
 - **Original stimuli unavailable.** The in-silico runs reuse the fUSI run's timing with new
   speech; what the real "Audio only" blocks contained is unknown.
-
-## In progress
-
-- **Text pathway (full TRIBE).** In full mode TRIBE transcribes the audio with WhisperX and feeds
-  the words to Llama 3.2. The transcripts are already in
-  ([results/insilico/transcription.tsv](results/insilico/transcription.tsv)):
-
-  | Control | Words recovered from the real passage |
-  |---|---|
-  | lowpass | 100% |
-  | vocoded (4 channels) | 92% |
-  | reversed | 10% |
-  | rotated | 4% |
-
-  So the text pathway will receive the real words for vocoded speech, but mostly noise for
-  reversed and rotated speech. The prediction: adding text should raise vocoded retention in
-  STS, MTG and IFG and leave reversed and rotated retention low there, with little change in HG.
-  Llama 3.2 is too slow and memory-hungry for a 24 GB laptop, so this step runs on a free Colab
-  GPU: [notebooks/run_full_mode_colab.ipynb](notebooks/run_full_mode_colab.ipynb)
-  ([open in Colab](https://colab.research.google.com/github/saanviiyer/fusi-tribe-speech/blob/main/notebooks/run_full_mode_colab.ipynb)).
 
 ## Repository layout
 

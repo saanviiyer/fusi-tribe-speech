@@ -126,6 +126,10 @@ def analyse_mode(cfg: Config, mode: str) -> dict:
                                     "diff": float(diff.mean()), "ci_lo": lo, "ci_hi": hi})
     paired = pd.DataFrame(paired_rows)
     paired.to_csv(res / "paired_contrasts.tsv", sep="\t", index=False)
+    pd.DataFrame([{"condition": c, "passage_index": i, "roi": roi, "retention": float(v[i, k])}
+                  for c, v in per_block.items() for i in range(v.shape[0])
+                  for k, roi in enumerate(roi_names)]).to_csv(res / "per_block_retention.tsv",
+                                                              sep="\t", index=False)
 
     timing = tribe_timing(roi_ts_by_cond, roi_names) if "silence" in roi_ts_by_cond else None
     if timing:
@@ -188,3 +192,22 @@ def _figure(retention: pd.DataFrame, paired: pd.DataFrame, mode: str, out_png: P
         bx.legend(frameon=False, fontsize=8)
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
+
+
+def compare_modes(cfg: Config, n_boot: int | None = None) -> pd.DataFrame:
+    """Change in retention from audio-only to full (text) mode, paired over passages."""
+    base = cfg.results_dir / "insilico"
+    a = pd.read_csv(base / "audio_only" / "per_block_retention.tsv", sep="\t")
+    f = pd.read_csv(base / "full" / "per_block_retention.tsv", sep="\t")
+    m = a.merge(f, on=["condition", "passage_index", "roi"], suffixes=("_audio", "_full"))
+    rng = np.random.default_rng(0)
+    rows = []
+    for (cond, roi), g in m.groupby(["condition", "roi"], sort=False):
+        d = (g.retention_full - g.retention_audio).to_numpy()
+        lo, hi = bootstrap_ci(np.mean, [d], n_boot or cfg.insilico.n_boot, rng)
+        rows.append({"condition": cond, "roi": roi, "retention_audio_only": g.retention_audio.mean(),
+                     "retention_full": g.retention_full.mean(), "change": float(d.mean()),
+                     "ci_lo": lo, "ci_hi": hi})
+    out = pd.DataFrame(rows).round(3)
+    out.to_csv(base / "mode_change.tsv", sep="\t", index=False)
+    return out

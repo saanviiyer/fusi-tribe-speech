@@ -51,7 +51,10 @@ def main(argv: list[str] | None = None) -> None:
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)
         timing_comparison(cfg)
-        if not mode_comparison(cfg):
+        if mode_comparison(cfg):
+            from .insilico.analysis import compare_modes
+            compare_modes(cfg)
+        else:
             print("Full-mode results not found; skipped the audio-only vs full comparison")
 
 

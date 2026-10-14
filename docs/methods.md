@@ -65,6 +65,12 @@ are paired over passages):
 
 All segments are RMS-matched with 50 ms ramps.
 
+**Full (text) mode.** WhisperX large-v3 transcribes each run; tribev2 adds Llama 3.2-3B features
+of each word with up to 1,024 words of preceding context. `fusi-tribe transcribe` records how many
+words of each control passage the transcriber recovers (`results/insilico/transcription.tsv`).
+`results/insilico/mode_change.tsv` gives the change in retention from audio-only to full mode,
+paired over passages.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.
@@ -92,6 +98,8 @@ Things that changed the analysis, in the order they came up.
 | 10 | TRIBE's transcription fails on CPU | `uvx whisperx --compute_type float16` is rejected by the CPU backend; `uvx` was not installed | `uv` added to the environment; `insilico/tribe.py` runs the same WhisperX call with int8 off CUDA |
 | 11 | Llama 3.2 text features unusably slow on a 24 GB Mac | CPU: 4–12 min per batch; MPS: 45–75 s per batch with the system swapping (~60 h for six runs) | Full mode moved to a Colab T4 (`notebooks/run_full_mode_colab.ipynb`). On GPUs under 20 GB, and on MPS, Llama runs in float16 (neuralset's own `accelerate` precision); TRIBE's released config computes text features in float32 on CUDA |
 | 12 | First Colab run failed in transcription | WhisperX downloads NLTK `punkt_tab` at run time; NLTK refuses fetches through Colab's proxy | The notebook fetches `punkt_tab` directly from NLTK's data repository (NLTK's proxy safeguard left on), stops on any failed step, and passes the Hugging Face token to subprocesses |
+| 13 | Full mode moved from Colab to ml7 | Caltech `ml-login7`, 4 × A100-80GB shared; launcher takes one GPU with ≥ 40 GB free and < 20% use | On an 80 GB A100 the text features use TRIBE's released float32 configuration; the float16 fallback applies only to smaller GPUs and MPS |
+| 14 | tribev2 misplaces words for chunked audio | First full run: 7 × 678 = 4,746 word events spread over 1,116 s of a 416 s track; predictions ran to 1,200 s | `place_transcript` keeps each chunk's own words on the global clock (tests in `tests/test_tribe_transcripts.py`); `run-tribe` refuses word events that overrun the track or repeat. Invalid run discarded; rerun gives 678 words and 500 s for intact |
 
 ## 4. Known limitations
 

@@ -71,8 +71,14 @@ def mode_comparison(cfg: Config) -> bool:
     if not all(p.exists() for p in paths.values()):
         return False
     df = pd.concat([pd.read_csv(p, sep="\t") for p in paths.values()])
-    rois = ["HG", "PT", "STG", "STS", "MTG", "IFG"]
-    conds = ["reversed", "rotated", "vocoded", "lowpass"]
+    # Only regions with a usable speech response in both modes (IFG has none).
+    rois = [r for r in ["HG", "PT", "STG", "STS", "MTG", "IFG"] if df[df.roi == r].reliable.all()]
+    conds = ["lowpass", "vocoded", "reversed", "rotated"]   # most to fewest words recovered
+    words = {}
+    tpath = cfg.results_dir / "insilico" / "transcription.tsv"
+    if tpath.exists():
+        t = pd.read_csv(tpath, sep="\t").set_index("condition")
+        words = t["fraction_of_intact_words_recovered"].to_dict()
     styles = {"audio_only": ("#7f8c8d", "o", "audio pathway only"),
               "full": ("#14707c", "s", "audio + text (Llama 3.2)")}
     fig, axes = plt.subplots(1, len(conds), figsize=(4 * len(conds), 3.8), sharey=True,
@@ -88,11 +94,11 @@ def mode_comparison(cfg: Config) -> bool:
         ax.axhline(1, color="grey", lw=0.8, ls="--")
         ax.axhline(0, color="grey", lw=0.8)
         ax.set_xticks(x, rois)
-        ax.set_title(cond)
+        ax.set_title(f"{cond}: {words[cond]:.0%} of words recovered" if cond in words else cond)
         ax.set_ylim(-0.3, 1.8)
     axes[0].set_ylabel("Retention (control / speech response)")
     axes[0].legend(frameon=False, fontsize=8, loc="upper left")
-    fig.suptitle("Does adding the text pathway make TRIBE sensitive to intelligibility?")
+    fig.suptitle("Adding the words: TRIBE v2 with the audio pathway only vs audio + text")
     fig.savefig(cfg.results_dir / "insilico" / "mode_comparison.png", dpi=200)
     plt.close(fig)
     return True

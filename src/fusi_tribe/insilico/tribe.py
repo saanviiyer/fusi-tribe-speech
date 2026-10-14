@@ -269,7 +269,7 @@ def transcription_summary(cfg: Config) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     ref = df.loc[df.condition == "intact", "control_words_matching_passage"]
     if len(ref):
-        df["fraction_of_intact_words_recovered"] = (df.control_words_matching_passage / ref.iloc[0]).round(3)
+        df["fraction_of_intact_words_recovered"] = (df.control_words_matching_passage / ref.iloc[0]).round(4)
     (cfg.results_dir / "insilico").mkdir(parents=True, exist_ok=True)
     df.to_csv(cfg.results_dir / "insilico" / "transcription.tsv", sep="\t", index=False)
     return df

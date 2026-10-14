@@ -81,10 +81,10 @@ in MTG, borderline in both. Tables: [results/robustness_tts_variant/](results/ro
 **4. Giving TRIBE the words restores its response to intelligible speech, but does not
 penalise unintelligible speech.** In full mode, TRIBE transcribes the audio with WhisperX and
 adds Llama 3.2 features of the words. The transcriber recovers 100% of the words from low-passed
-speech, 92% from 4-channel vocoded speech, 10% from reversed and 4% from rotated speech. Adding
+speech, 93% from 4-channel vocoded speech, 10% from reversed and 4% from rotated speech. Adding
 the words raises retention where the words come through, and barely changes it where they don't:
 
-| Region | lowpass (100% of words) | vocoded (92%) | reversed (10%) | rotated (4%) | intact (null) |
+| Region | lowpass (100% of words) | vocoded (93%) | reversed (10%) | rotated (4%) | intact (null) |
 |---|---|---|---|---|---|
 | HG | +0.06 [+0.01, +0.13] | **+0.17** [+0.12, +0.25] | +0.03 [−0.03, +0.10] | +0.03 [−0.03, +0.11] | −0.02 |
 | STG | +0.11 [+0.04, +0.19] | **+0.32** [+0.26, +0.39] | +0.01 [−0.09, +0.11] | +0.05 [−0.03, +0.16] | −0.00 |

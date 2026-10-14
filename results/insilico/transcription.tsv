@@ -1,7 +1,7 @@
 condition	speech_block_words	control_block_words	control_words_matching_passage	fraction_of_intact_words_recovered
 intact	354	323	321	1.0
-vocoded	354	321	297	0.925
-rotated	354	74	12	0.037
+vocoded	354	321	297	0.9252
+rotated	354	74	12	0.0374
 lowpass	354	323	321	1.0
-reversed	354	124	32	0.1
+reversed	354	124	32	0.0997
 silence	354	0	0	0.0

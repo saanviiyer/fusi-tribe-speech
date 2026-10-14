@@ -67,6 +67,65 @@ def transcribe(wav: Path, language: str = "english", device: str | None = None) 
     return pd.DataFrame(words)
 
 
+def place_transcript(transcript: pd.DataFrame, chunk_start: float, chunk_offset: float,
+                     chunk_duration: float) -> pd.DataFrame:
+    """Words of a whole-file transcript that fall inside one audio chunk, on the global clock.
+
+    `chunk_offset` is where the chunk begins within the audio file and `chunk_start`
+    where it begins on the event timeline.
+    """
+    inside = (transcript.start >= chunk_offset) & (transcript.start < chunk_offset + chunk_duration)
+    placed = transcript.loc[inside].copy()
+    placed["start"] = placed["start"] - chunk_offset + chunk_start
+    return placed
+
+
+def _fix_chunked_transcripts() -> None:
+    """Correct tribev2's ExtractWordsFromAudio for audio split into chunks.
+
+    TRIBE splits long audio into 30-60 s chunks, then gives *every* chunk the whole
+    file's transcript, shifted by the chunk's start and offset. A 416 s run with
+    7 chunks got 7 x 678 words spread over 1,116 s. Each chunk now keeps only
+    its own words (`place_transcript`). Short clips (one chunk) are unaffected.
+    """
+    import copy
+
+    from tqdm import tqdm
+    from tribev2.eventstransforms import ExtractWordsFromAudio
+
+    if getattr(ExtractWordsFromAudio._run, "_fusi_tribe_fixed", False):
+        return
+
+    def _run(self, events: pd.DataFrame) -> pd.DataFrame:
+        if "Word" in events.type.unique():
+            return events
+        audio = events.loc[events.type == "Audio"]
+        transcripts = {}
+        for wav in tqdm(audio.filepath.unique(), desc="Extracting words from audio"):
+            wav = Path(wav)
+            cached = wav.with_suffix(".tsv")
+            if cached.exists() and not self.overwrite:
+                transcripts[str(wav)] = pd.read_csv(cached, sep="\t")
+            else:
+                transcripts[str(wav)] = self._get_transcript_from_audio(wav, self.language)
+                transcripts[str(wav)].to_csv(cached, sep="\t", index=False)
+        placed = []
+        for ev in audio.itertuples():
+            t = place_transcript(copy.deepcopy(transcripts[ev.filepath]), ev.start, ev.offset, ev.duration)
+            if not len(t):
+                continue
+            for k, v in ev._asdict().items():
+                if k not in ("Index", "frequency", "filepath", "type", "start", "duration", "offset"):
+                    t.loc[:, k] = v
+            t["type"] = "Word"
+            t["language"] = self.language
+            placed.append(t)
+        return pd.concat([events, *placed], ignore_index=True) if placed else events
+
+    _run._fusi_tribe_fixed = True
+    ExtractWordsFromAudio._run = _run
+
+
 def _use_cpu_friendly_transcription() -> None:
     from tribev2.eventstransforms import ExtractWordsFromAudio
     ExtractWordsFromAudio._get_transcript_from_audio = staticmethod(
@@ -141,6 +200,8 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
     out_dir = cfg.output_dir / "predictions" / mode
     out_dir.mkdir(parents=True, exist_ok=True)
     model, device = load_tribe(cfg.output_dir / "tribe_cache")
+    if mode == "full":
+        _fix_chunked_transcripts()
     if mode == "full" and device != "cuda":
         _use_cpu_friendly_transcription()
         if device == "mps":
@@ -153,12 +214,16 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
             pd.DataFrame([{"type": "Audio", "filepath": str(wav), "start": 0,
                            "timeline": cond, "subject": "default"}]),
             audio_only=(mode == "audio_only"))
+        words = events[events.type == "Word"]
+        total_s = manifest["total_s"]
+        if len(words) and (words.start.max() > total_s or words.duplicated(["start", "text"]).any()):
+            raise RuntimeError(f"{cond}: word events run to {words.start.max():.0f} s on a {total_s:.0f} s "
+                               f"track or repeat; the transcript was not placed correctly")
         preds, segments = model.predict(events=events)
         starts = np.array([s.start for s in segments], dtype=float)
         order = np.argsort(starts)
         np.savez_compressed(out_dir / f"{cond}.npz", preds=preds[order].astype(np.float32),
                             starts=starts[order], stimulus_md5=md5(wav))
-        words = events[events.type == "Word"]
         if len(words):
             words[["start", "duration", "text"]].to_csv(out_dir / f"{cond}_words.tsv",
                                                         sep="\t", index=False)

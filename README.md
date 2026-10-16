@@ -102,6 +102,37 @@ IFG has no measurable predicted speech response in either mode, so it cannot be 
 
 ![Audio-only vs full mode](results/insilico/mode_comparison.png)
 
+**5. Causal swaps confirm that the words drive the restored response, and expose two
+places where TRIBE departs from human brains.** TRIBE reads the transcript cached next to each
+audio track, so I paired each run's audio with edited words in the control blocks only and
+compared it, passage by passage, with the unedited full-mode run:
+
+| Swap (control blocks) | HG | STG | STS | MTG |
+|---|---|---|---|---|
+| vocoded audio, words removed | **−0.30** | **−0.43** | **−0.47** | **−0.37** |
+| rotated audio + the true words | **+0.12** | **+0.25** | **+0.31** | **+0.26** |
+| reversed audio + the true words | −0.10 | −0.06 | +0.03 | −0.04 |
+| intact audio, words removed | **−0.07** | **−0.12** | **−0.26** | **−0.28** |
+| intact audio, words shuffled | **+0.23** | **+0.19** | **+0.24** | **+0.40** |
+| silence + the true words | **+0.39** | **+0.41** | **+0.39** | **+0.35** |
+
+*Change in retention against the reference run; bold intervals exclude zero (95% bootstrap over
+passages). Full table: [results/insilico/swaps.tsv](results/insilico/swaps.tsv).*
+
+Removing the words from vocoded speech drops its STS retention from 1.01 to 0.54. Giving
+rotated speech its true words raises STS retention from 0.59 to 0.91, even though the audio
+still cannot be understood. For reversed speech, which already drives these regions as strongly
+as real speech, the true words change nothing. In intact speech the words carry part of the
+response, more in STS and MTG than in primary auditory cortex.
+
+Two results run against what is known about human cortex. Shuffling the word order *raises* the
+predicted response (MTG +0.40), while human language areas respond more strongly to sentences
+than to lists of unconnected words (Fedorenko et al., 2010). And words presented with no sound
+at all drive every region, including primary auditory cortex (HG retention 0.45). In TRIBE,
+the text pathway alone can drive predicted activity in auditory cortex.
+
+![Causal swaps](results/insilico/swaps.png)
+
 ## How it works
 
 ```
@@ -132,7 +163,7 @@ Methods, the full decision log and the limitations are in [docs/methods.md](docs
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make install          # package + TRIBE v2 + pytest
-make test             # 34 unit tests, no data needed (~40 s)
+make test             # 38 unit tests, no data needed (~1 min)
 make all              # needs the run in data/ (see data/README.md); ~1.5 h on an M-series Mac
 ```
 
@@ -186,6 +217,7 @@ src/fusi_tribe/
   insilico/stimuli.py  speech synthesis and acoustic manipulations
   insilico/tribe.py    TRIBE v2 runner (CUDA / MPS / CPU)
   insilico/analysis.py retention, paired contrasts, TRIBE timing
+  insilico/swaps.py    causal swaps: same audio, edited words
   report.py            cross-modality figures
   cli.py               `fusi-tribe` command
 configs/   tests/   docs/   results/ (committed figures and tables)

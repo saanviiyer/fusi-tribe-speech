@@ -71,6 +71,12 @@ words of each control passage the transcriber recovers (`results/insilico/transc
 `results/insilico/mode_change.tsv` gives the change in retention from audio-only to full mode,
 paired over passages.
 
+**Causal swaps** (`insilico/swaps.py`). Full-mode TRIBE reads the transcript cached next to each
+audio file. Each swap copies a run's audio and edits that transcript inside the control blocks
+only: words removed, the true words inserted (taken from the intact run, whose control blocks hold
+the same passages), or the run's own words shuffled within each block. Speech blocks keep their
+words. Each swap is compared with its unedited full-mode run, passage by passage.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.

@@ -168,7 +168,8 @@ def _figure(df: pd.DataFrame, out_png: Path) -> None:
         sub = df[df.roi == roi].set_index("swap").reindex(swaps)
         pos = x + (j - (len(rois) - 1) / 2) * width
         sig = (sub.ci_lo > 0) | (sub.ci_hi < 0)
-        ax.bar(pos, sub["change"], width * 0.9, color=colors[j], alpha=np.where(sig, 1.0, 0.35), label=roi)
+        for p, v, s in zip(pos, sub["change"], sig):   # solid if the 95% CI excludes 0
+            ax.bar(p, v, width * 0.9, color=colors[j], alpha=1.0 if s else 0.35)
         ax.errorbar(pos, sub["change"], yerr=[sub["change"] - sub.ci_lo, sub.ci_hi - sub["change"]],
                     fmt="none", ecolor="k", lw=0.8, capsize=1.5)
     ax.axhline(0, color="k", lw=0.8)
@@ -176,6 +177,8 @@ def _figure(df: pd.DataFrame, out_png: Path) -> None:
     ax.set_xticks(x, labels)
     ax.set(ylabel="Change in retention vs reference run",
            title="Causal swaps: same audio, edited words in the control blocks (TRIBE v2, full mode)")
-    ax.legend(frameon=False, ncol=len(rois), fontsize=8)
+    from matplotlib.patches import Patch
+    ax.legend(handles=[Patch(color=colors[j], label=r) for j, r in enumerate(rois)],
+              frameon=False, ncol=len(rois), fontsize=8, title="solid: 95% CI excludes 0", title_fontsize=8)
     fig.savefig(out_png, dpi=200)
     plt.close(fig)

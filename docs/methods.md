@@ -100,6 +100,7 @@ Things that changed the analysis, in the order they came up.
 | 12 | First Colab run failed in transcription | WhisperX downloads NLTK `punkt_tab` at run time; NLTK refuses fetches through Colab's proxy | The notebook fetches `punkt_tab` directly from NLTK's data repository (NLTK's proxy safeguard left on), stops on any failed step, and passes the Hugging Face token to subprocesses |
 | 13 | Full mode moved from Colab to ml7 | Caltech `ml-login7`, 4 × A100-80GB shared; launcher takes one GPU with ≥ 40 GB free and < 20% use | On an 80 GB A100 the text features use TRIBE's released float32 configuration; the float16 fallback applies only to smaller GPUs and MPS |
 | 14 | tribev2 misplaces words for chunked audio | First full run: 7 × 678 = 4,746 word events spread over 1,116 s of a 416 s track; predictions ran to 1,200 s | `place_transcript` keeps each chunk's own words on the global clock (tests in `tests/test_tribe_transcripts.py`); `run-tribe` refuses word events that overrun the track or repeat. Invalid run discarded; rerun gives 678 words and 500 s for intact |
+| 15 | Word-recovery figures came from a different transcript than TRIBE used | The summary used CPU (int8) WhisperX transcripts; TRIBE's full runs used its own GPU (float16) transcripts. Vocoded 92.5% vs 95.9%, reversed 10.0% vs 11.6%, rotated 3.7% vs 5.3% | `transcribe` now summarises the transcript TRIBE cached for each run, so the figures are what the text pathway received |
 
 ## 4. Known limitations
 

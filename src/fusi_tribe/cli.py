@@ -25,6 +25,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
     sub.add_parser("make-swaps", help="Causal swap stimuli: same audio, edited control-block words")
     sub.add_parser("analyze-swaps", help="Paired change in retention for each swap vs its reference")
+    sub.add_parser("layers", help="Layer-wise separation of controls inside TRIBE's audio and text encoders (GPU)")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -56,6 +57,9 @@ def main(argv: list[str] | None = None) -> None:
         from .insilico.swaps import analyse_swaps
         out = analyse_swaps(cfg)
         print(out.pivot(index="swap", columns="roi", values="change").to_string() if len(out) else "no swap results")
+    elif args.step == "layers":
+        from .insilico.layers import run_layers
+        run_layers(cfg)
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

@@ -23,6 +23,8 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("transcribe", help="What TRIBE's text pathway hears in each control (WhisperX)")
     p = sub.add_parser("analyze-tribe", help="Retention, paired contrasts and timing from predictions")
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
+    sub.add_parser("make-swaps", help="Causal swap stimuli: same audio, edited control-block words")
+    sub.add_parser("analyze-swaps", help="Paired change in retention for each swap vs its reference")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -47,6 +49,13 @@ def main(argv: list[str] | None = None) -> None:
         out = analyse_mode(cfg, args.mode)
         r = out["retention"]
         print(r[r.reliable].pivot(index="roi", columns="condition", values="retention").dropna().round(2))
+    elif args.step == "make-swaps":
+        from .insilico.swaps import make_swaps
+        make_swaps(cfg)
+    elif args.step == "analyze-swaps":
+        from .insilico.swaps import analyse_swaps
+        out = analyse_swaps(cfg)
+        print(out.pivot(index="swap", columns="roi", values="change").to_string() if len(out) else "no swap results")
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

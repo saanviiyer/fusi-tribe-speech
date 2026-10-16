@@ -199,7 +199,9 @@ def make_stimuli(cfg: Config, only: list[str] | None = None, force: bool = False
                                         "blocks": blocks}
         print(f"wrote {cond}.wav ({total_s:.0f} s)")
 
-    manifest["conditions"] = {c: manifest["conditions"][c] for c in ic.conditions
-                              if c in manifest["conditions"]}
+    # Configured conditions first, then any extras (e.g. swap stimuli) kept as they are.
+    manifest["conditions"] = ({c: manifest["conditions"][c] for c in ic.conditions
+                               if c in manifest["conditions"]}
+                              | {c: v for c, v in manifest["conditions"].items() if c not in ic.conditions})
     manifest_path.write_text(json.dumps(manifest, indent=2))
     return out_dir

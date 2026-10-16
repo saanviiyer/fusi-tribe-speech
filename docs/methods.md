@@ -77,6 +77,14 @@ only: words removed, the true words inserted (taken from the intact run, whose c
 the same passages), or the run's own words shuffled within each block. Speech blocks keep their
 words. Each swap is compared with its unedited full-mode run, passage by passage.
 
+**Layer analysis** (`insilico/layers.py`). Audio: each control passage through Wav2Vec-BERT 2.0;
+at every layer, linear CKA over matched frames against the same passage spoken intact (reversed
+speech flipped back into register), pooled over the seven passages, with and without each frame's
+log energy regressed out. Text: each control block's words embedded by Llama 3.2-3B with up to
+1,024 preceding words of its run as context (as TRIBE does), mean-pooled over the block's tokens;
+every dimension z-scored across all blocks, then cosine similarity to the intact block. Floors
+compare different intact passages.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.
@@ -107,6 +115,7 @@ Things that changed the analysis, in the order they came up.
 | 13 | Full mode moved from Colab to ml7 | Caltech `ml-login7`, 4 × A100-80GB shared; launcher takes one GPU with ≥ 40 GB free and < 20% use | On an 80 GB A100 the text features use TRIBE's released float32 configuration; the float16 fallback applies only to smaller GPUs and MPS |
 | 14 | tribev2 misplaces words for chunked audio | First full run: 7 × 678 = 4,746 word events spread over 1,116 s of a 416 s track; predictions ran to 1,200 s | `place_transcript` keeps each chunk's own words on the global clock (tests in `tests/test_tribe_transcripts.py`); `run-tribe` refuses word events that overrun the track or repeat. Invalid run discarded; rerun gives 678 words and 500 s for intact |
 | 15 | Word-recovery figures came from a different transcript than TRIBE used | The summary used CPU (int8) WhisperX transcripts; TRIBE's full runs used its own GPU (float16) transcripts. Vocoded 92.5% vs 95.9%, reversed 10.0% vs 11.6%, rotated 3.7% vs 5.3% | `transcribe` now summarises the transcript TRIBE cached for each run, so the figures are what the text pathway received |
+| 16 | Layer analysis: first text similarity was an artifact | Rotated and reversed transcripts (mostly hallucinated words) scored ~0.95 against the true passage at layers 2-4, far above the 0.42 different-passage floor. A few Llama dimensions with very large activations dominate mean-pooled vectors | Every dimension z-scored across blocks before the cosine; a true-words sanity check scores 1.00. Audio CKA also reported with frame loudness regressed out, since frame-matched CKA rewards a shared envelope; the reversed-speech result survives (0.89-0.94) |
 
 ## 4. Known limitations
 

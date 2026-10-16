@@ -1,126 +1,126 @@
-condition	layer	depth	cka
-different passage (floor)	0	0.0	0.0072
-different passage (floor)	1	0.0417	0.0077
-different passage (floor)	2	0.0833	0.0086
-different passage (floor)	3	0.125	0.0101
-different passage (floor)	4	0.1667	0.0109
-different passage (floor)	5	0.2083	0.0104
-different passage (floor)	6	0.25	0.0102
-different passage (floor)	7	0.2917	0.0101
-different passage (floor)	8	0.3333	0.0115
-different passage (floor)	9	0.375	0.0086
-different passage (floor)	10	0.4167	0.0118
-different passage (floor)	11	0.4583	0.013
-different passage (floor)	12	0.5	0.0119
-different passage (floor)	13	0.5417	0.0098
-different passage (floor)	14	0.5833	0.0097
-different passage (floor)	15	0.625	0.0093
-different passage (floor)	16	0.6667	0.01
-different passage (floor)	17	0.7083	0.0102
-different passage (floor)	18	0.75	0.0107
-different passage (floor)	19	0.7917	0.0104
-different passage (floor)	20	0.8333	0.0105
-different passage (floor)	21	0.875	0.0098
-different passage (floor)	22	0.9167	0.0088
-different passage (floor)	23	0.9583	0.0103
-different passage (floor)	24	1.0	0.006
-lowpass	0	0.0	0.7671
-lowpass	1	0.0417	0.9017
-lowpass	2	0.0833	0.9432
-lowpass	3	0.125	0.9469
-lowpass	4	0.1667	0.9379
-lowpass	5	0.2083	0.9125
-lowpass	6	0.25	0.9006
-lowpass	7	0.2917	0.9127
-lowpass	8	0.3333	0.9235
-lowpass	9	0.375	0.8735
-lowpass	10	0.4167	0.8541
-lowpass	11	0.4583	0.8163
-lowpass	12	0.5	0.7952
-lowpass	13	0.5417	0.8498
-lowpass	14	0.5833	0.8499
-lowpass	15	0.625	0.8701
-lowpass	16	0.6667	0.8683
-lowpass	17	0.7083	0.8776
-lowpass	18	0.75	0.8809
-lowpass	19	0.7917	0.8868
-lowpass	20	0.8333	0.872
-lowpass	21	0.875	0.8712
-lowpass	22	0.9167	0.8823
-lowpass	23	0.9583	0.8915
-lowpass	24	1.0	0.8991
-vocoded	0	0.0	0.5211
-vocoded	1	0.0417	0.6949
-vocoded	2	0.0833	0.7467
-vocoded	3	0.125	0.7808
-vocoded	4	0.1667	0.7621
-vocoded	5	0.2083	0.731
-vocoded	6	0.25	0.72
-vocoded	7	0.2917	0.708
-vocoded	8	0.3333	0.745
-vocoded	9	0.375	0.6903
-vocoded	10	0.4167	0.6633
-vocoded	11	0.4583	0.6368
-vocoded	12	0.5	0.628
-vocoded	13	0.5417	0.6731
-vocoded	14	0.5833	0.6807
-vocoded	15	0.625	0.6985
-vocoded	16	0.6667	0.6971
-vocoded	17	0.7083	0.7075
-vocoded	18	0.75	0.7082
-vocoded	19	0.7917	0.7216
-vocoded	20	0.8333	0.71
-vocoded	21	0.875	0.7025
-vocoded	22	0.9167	0.7005
-vocoded	23	0.9583	0.7022
-vocoded	24	1.0	0.6821
-rotated	0	0.0	0.448
-rotated	1	0.0417	0.7177
-rotated	2	0.0833	0.8041
-rotated	3	0.125	0.8451
-rotated	4	0.1667	0.8358
-rotated	5	0.2083	0.8051
-rotated	6	0.25	0.7958
-rotated	7	0.2917	0.7824
-rotated	8	0.3333	0.8134
-rotated	9	0.375	0.8192
-rotated	10	0.4167	0.7925
-rotated	11	0.4583	0.7481
-rotated	12	0.5	0.7334
-rotated	13	0.5417	0.7918
-rotated	14	0.5833	0.8073
-rotated	15	0.625	0.825
-rotated	16	0.6667	0.8341
-rotated	17	0.7083	0.8446
-rotated	18	0.75	0.8498
-rotated	19	0.7917	0.8445
-rotated	20	0.8333	0.8251
-rotated	21	0.875	0.818
-rotated	22	0.9167	0.7905
-rotated	23	0.9583	0.7996
-rotated	24	1.0	0.6234
-reversed	0	0.0	0.9506
-reversed	1	0.0417	0.9598
-reversed	2	0.0833	0.9502
-reversed	3	0.125	0.9435
-reversed	4	0.1667	0.9345
-reversed	5	0.2083	0.9151
-reversed	6	0.25	0.9099
-reversed	7	0.2917	0.926
-reversed	8	0.3333	0.9329
-reversed	9	0.375	0.9175
-reversed	10	0.4167	0.8598
-reversed	11	0.4583	0.8019
-reversed	12	0.5	0.7918
-reversed	13	0.5417	0.8734
-reversed	14	0.5833	0.8981
-reversed	15	0.625	0.9267
-reversed	16	0.6667	0.9311
-reversed	17	0.7083	0.9412
-reversed	18	0.75	0.9438
-reversed	19	0.7917	0.9414
-reversed	20	0.8333	0.9442
-reversed	21	0.875	0.9356
-reversed	22	0.9167	0.9387
-reversed	23	0.9583	0.9363
-reversed	24	1.0	0.9236
+condition	layer	depth	cka	cka_energy_removed
+different passage (floor)	0	0.0	0.0072	0.008
+different passage (floor)	1	0.0417	0.0077	0.0084
+different passage (floor)	2	0.0833	0.0086	0.0097
+different passage (floor)	3	0.125	0.0101	0.0115
+different passage (floor)	4	0.1667	0.0109	0.0121
+different passage (floor)	5	0.2083	0.0104	0.0115
+different passage (floor)	6	0.25	0.0102	0.0113
+different passage (floor)	7	0.2917	0.0101	0.011
+different passage (floor)	8	0.3333	0.0115	0.0126
+different passage (floor)	9	0.375	0.0086	0.009
+different passage (floor)	10	0.4167	0.0118	0.0126
+different passage (floor)	11	0.4583	0.013	0.0136
+different passage (floor)	12	0.5	0.0119	0.0124
+different passage (floor)	13	0.5417	0.0098	0.0102
+different passage (floor)	14	0.5833	0.0097	0.0102
+different passage (floor)	15	0.625	0.0093	0.0098
+different passage (floor)	16	0.6667	0.01	0.0108
+different passage (floor)	17	0.7083	0.0102	0.0111
+different passage (floor)	18	0.75	0.0107	0.0119
+different passage (floor)	19	0.7917	0.0104	0.0117
+different passage (floor)	20	0.8333	0.0105	0.0116
+different passage (floor)	21	0.875	0.0098	0.0108
+different passage (floor)	22	0.9167	0.0088	0.0096
+different passage (floor)	23	0.9583	0.0103	0.011
+different passage (floor)	24	1.0	0.006	0.0062
+lowpass	0	0.0	0.7671	0.782
+lowpass	1	0.0417	0.9017	0.932
+lowpass	2	0.0833	0.9432	0.9593
+lowpass	3	0.125	0.9469	0.9619
+lowpass	4	0.1667	0.9379	0.959
+lowpass	5	0.2083	0.9125	0.9342
+lowpass	6	0.25	0.9006	0.9239
+lowpass	7	0.2917	0.9127	0.9397
+lowpass	8	0.3333	0.9235	0.9407
+lowpass	9	0.375	0.8735	0.9168
+lowpass	10	0.4167	0.8541	0.8804
+lowpass	11	0.4583	0.8163	0.8271
+lowpass	12	0.5	0.7952	0.8055
+lowpass	13	0.5417	0.8498	0.8879
+lowpass	14	0.5833	0.8499	0.8972
+lowpass	15	0.625	0.8701	0.9158
+lowpass	16	0.6667	0.8683	0.9188
+lowpass	17	0.7083	0.8776	0.9223
+lowpass	18	0.75	0.8809	0.9167
+lowpass	19	0.7917	0.8868	0.9223
+lowpass	20	0.8333	0.872	0.9159
+lowpass	21	0.875	0.8712	0.9154
+lowpass	22	0.9167	0.8823	0.921
+lowpass	23	0.9583	0.8915	0.921
+lowpass	24	1.0	0.8991	0.932
+vocoded	0	0.0	0.5211	0.4143
+vocoded	1	0.0417	0.6949	0.6383
+vocoded	2	0.0833	0.7467	0.6664
+vocoded	3	0.125	0.7808	0.6805
+vocoded	4	0.1667	0.7621	0.6674
+vocoded	5	0.2083	0.731	0.6376
+vocoded	6	0.25	0.72	0.6288
+vocoded	7	0.2917	0.708	0.6252
+vocoded	8	0.3333	0.745	0.6654
+vocoded	9	0.375	0.6903	0.6021
+vocoded	10	0.4167	0.6633	0.5654
+vocoded	11	0.4583	0.6368	0.5372
+vocoded	12	0.5	0.628	0.5295
+vocoded	13	0.5417	0.6731	0.5821
+vocoded	14	0.5833	0.6807	0.5946
+vocoded	15	0.625	0.6985	0.6162
+vocoded	16	0.6667	0.6971	0.6142
+vocoded	17	0.7083	0.7075	0.6311
+vocoded	18	0.75	0.7082	0.6369
+vocoded	19	0.7917	0.7216	0.6439
+vocoded	20	0.8333	0.71	0.6428
+vocoded	21	0.875	0.7025	0.644
+vocoded	22	0.9167	0.7005	0.6383
+vocoded	23	0.9583	0.7022	0.6445
+vocoded	24	1.0	0.6821	0.6632
+rotated	0	0.0	0.448	0.4073
+rotated	1	0.0417	0.7177	0.7038
+rotated	2	0.0833	0.8041	0.7831
+rotated	3	0.125	0.8451	0.8104
+rotated	4	0.1667	0.8358	0.7989
+rotated	5	0.2083	0.8051	0.765
+rotated	6	0.25	0.7958	0.7583
+rotated	7	0.2917	0.7824	0.7448
+rotated	8	0.3333	0.8134	0.7782
+rotated	9	0.375	0.8192	0.8147
+rotated	10	0.4167	0.7925	0.7743
+rotated	11	0.4583	0.7481	0.7159
+rotated	12	0.5	0.7334	0.7015
+rotated	13	0.5417	0.7918	0.7876
+rotated	14	0.5833	0.8073	0.8042
+rotated	15	0.625	0.825	0.8208
+rotated	16	0.6667	0.8341	0.8257
+rotated	17	0.7083	0.8446	0.831
+rotated	18	0.75	0.8498	0.8321
+rotated	19	0.7917	0.8445	0.8241
+rotated	20	0.8333	0.8251	0.8089
+rotated	21	0.875	0.818	0.7972
+rotated	22	0.9167	0.7905	0.7741
+rotated	23	0.9583	0.7996	0.7901
+rotated	24	1.0	0.6234	0.5674
+reversed	0	0.0	0.9506	0.9413
+reversed	1	0.0417	0.9598	0.95
+reversed	2	0.0833	0.9502	0.9357
+reversed	3	0.125	0.9435	0.9273
+reversed	4	0.1667	0.9345	0.92
+reversed	5	0.2083	0.9151	0.8981
+reversed	6	0.25	0.9099	0.8911
+reversed	7	0.2917	0.926	0.9141
+reversed	8	0.3333	0.9329	0.9219
+reversed	9	0.375	0.9175	0.9083
+reversed	10	0.4167	0.8598	0.8435
+reversed	11	0.4583	0.8019	0.7801
+reversed	12	0.5	0.7918	0.7672
+reversed	13	0.5417	0.8734	0.8655
+reversed	14	0.5833	0.8981	0.8908
+reversed	15	0.625	0.9267	0.9192
+reversed	16	0.6667	0.9311	0.9243
+reversed	17	0.7083	0.9412	0.9345
+reversed	18	0.75	0.9438	0.9366
+reversed	19	0.7917	0.9414	0.932
+reversed	20	0.8333	0.9442	0.9355
+reversed	21	0.875	0.9356	0.9248
+reversed	22	0.9167	0.9387	0.9293
+reversed	23	0.9583	0.9363	0.9287
+reversed	24	1.0	0.9236	0.9108

@@ -133,6 +133,24 @@ the text pathway alone can drive predicted activity in auditory cortex.
 
 ![Causal swaps](results/insilico/swaps.png)
 
+**6. Inside TRIBE's encoders: the audio model barely separates reversed speech from real
+speech, and the text model separates it completely.** I ran each control passage through the two
+open models TRIBE builds on and compared every layer with the same passage spoken intact.
+Wav2Vec-BERT 2.0 represents time-reversed speech (flipped back into register) as closely to intact
+speech as it represents low-passed speech, at every depth: frame-level CKA 0.89 to 0.94 with each
+frame's loudness regressed out, against 0.01 for two different passages. Spectral rotation
+separates mainly at the last layer (0.57), and vocoding throughout (0.41 to 0.66). In Llama
+3.2-3B, the transcripts of reversed and rotated speech sit at the different-passage floor at every
+layer, while vocoded speech stays close (0.74 to 0.88). This is the mechanism behind findings 2
+and 5: the audio features TRIBE uses carry reversed speech as if it were speech, and only the
+text pathway can tell the difference.
+
+Shuffled word order matches intact speech in the token embeddings (layer 0) and falls to the floor
+by about 15% depth, so the text model encodes word order early. TRIBE nevertheless predicts a
+*larger* response to shuffled words (finding 5).
+
+![Layer-wise separation](results/insilico/layers.png)
+
 ## How it works
 
 ```
@@ -163,7 +181,7 @@ Methods, the full decision log and the limitations are in [docs/methods.md](docs
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make install          # package + TRIBE v2 + pytest
-make test             # 38 unit tests, no data needed (~1 min)
+make test             # 40 unit tests, no data needed (~1 min)
 make all              # needs the run in data/ (see data/README.md); ~1.5 h on an M-series Mac
 ```
 
@@ -218,6 +236,7 @@ src/fusi_tribe/
   insilico/tribe.py    TRIBE v2 runner (CUDA / MPS / CPU)
   insilico/analysis.py retention, paired contrasts, TRIBE timing
   insilico/swaps.py    causal swaps: same audio, edited words
+  insilico/layers.py   layer-wise separation inside TRIBE's audio and text encoders
   report.py            cross-modality figures
   cli.py               `fusi-tribe` command
 configs/   tests/   docs/   results/ (committed figures and tables)

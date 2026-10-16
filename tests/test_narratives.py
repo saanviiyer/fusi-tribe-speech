@@ -27,3 +27,13 @@ def test_best_lag_recovers_planted_shift(shift):
     x = np.convolve(rng.normal(size=400), np.ones(5) / 5, mode="same")
     target = np.roll(x, shift)
     assert best_lag(x, target) == shift
+
+
+def test_subject_correlations_rank_a_true_predictor_above_noise():
+    from fusi_tribe.narratives.analysis import subject_correlations
+    rng = np.random.default_rng(4)
+    signal = rng.normal(size=300)
+    ts = signal + rng.normal(size=(15, 300))
+    r_true, r_others = subject_correlations(ts, signal, lag=0)
+    r_noise, _ = subject_correlations(ts, rng.normal(size=300), lag=0)
+    assert r_true.mean() > 0.5 and abs(r_noise.mean()) < 0.1 and r_others.mean() > 0.5

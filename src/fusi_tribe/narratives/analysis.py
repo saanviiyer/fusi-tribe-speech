@@ -212,7 +212,8 @@ def run_narratives(cfg: Config, narr_dir: Path, pred_dir: Path) -> pd.DataFrame:
                         **{f"{g}__{v}": arr for (g, v), arr in data.items()})
     preds = {v: tribe_timecourses(pred_dir / f"{v}.npz", n_tr, masks, cfg.insilico.tribe_offset_s) for v in VERSIONS}
     tribe_change = bootstrap_tribe_change(data, preds, roi_names, lag, rng)
-    tribe_change.round(4).to_csv(res / "tribe_accuracy_change.tsv", sep="\t", index=False)
+    tribe_change.round(4).to_csv(res / "tribe_vs_human_change.tsv", sep="\t", index=False)
+    plot_comparison(tribe_change, roi_names, res / "tribe_vs_human.png")
     out.round(4).to_csv(res / "narratives_summary.tsv", sep="\t", index=False)
     paired = paired_isc_change(data, roi_names, rng)
     paired.round(4).to_csv(res / "isc_change.tsv", sep="\t", index=False)
@@ -220,33 +221,85 @@ def run_narratives(cfg: Config, narr_dir: Path, pred_dir: Path) -> pd.DataFrame:
     return out
 
 
-def normalised_accuracy(ts: np.ndarray, pred: np.ndarray, lag: int, rng, n_splits: int) -> float:
+def subject_correlations(ts: np.ndarray, pred: np.ndarray, lag: int) -> tuple[np.ndarray, np.ndarray]:
+    """Per person: r(TRIBE prediction, person) and r(mean of everyone else, person)."""
     sl = slice(max(lag, 0), ts.shape[1] + min(lag, 0))
     p = np.roll(zscore(pred), lag)[sl]
-    r = np.corrcoef(p, ts.mean(0)[sl])[0, 1]
-    ceil = split_half_ceiling(ts[:, sl], rng, n_splits)
-    return r / ceil if ceil > 0 else np.nan
+    z = zscore(ts[:, sl], axis=1)
+    r_tribe = np.array([np.corrcoef(p, zi)[0, 1] for zi in z])
+    r_others = np.array([np.corrcoef(np.delete(z, i, axis=0).mean(0), z[i])[0, 1] for i in range(len(z))])
+    return r_tribe, r_others
 
 
 def bootstrap_tribe_change(data: dict, preds: dict, roi_names: list[str], lag: int,
-                           rng: np.random.Generator, n_boot: int = 500, n_splits: int = 20) -> pd.DataFrame:
-    """Scrambled minus intact TRIBE accuracy (r / noise ceiling), resampling the same people for both."""
+                           rng: np.random.Generator, n_boot: int = 5000) -> pd.DataFrame:
+    """Scrambled minus intact, paired within people, on one scale (correlation with each person):
+    delta_tribe for TRIBE's prediction, delta_others for the average of the other listeners.
+    Bootstrap over people. Per-person ratios are avoided because r_others can be near 0."""
     rows = []
     for g, task in GROUPS.items():
         A, B = data[(g, "notthefallintact")], data[(g, task)]
-        n = len(A)
         for k, roi in enumerate(roi_names):
-            pa, pb = preds["notthefallintact"][roi], preds[task][roi]
-            point = (normalised_accuracy(B[:, :, k], pb, lag, rng, N_SPLITS)
-                     - normalised_accuracy(A[:, :, k], pa, lag, rng, N_SPLITS))
-            boots = []
-            for _ in range(n_boot):
-                idx = rng.integers(0, n, n)
-                boots.append(normalised_accuracy(B[idx, :, k], pb, lag, rng, n_splits)
-                             - normalised_accuracy(A[idx, :, k], pa, lag, rng, n_splits))
-            lo, hi = np.nanpercentile(boots, [2.5, 97.5])
-            rows.append({"group": g, "roi": roi, "accuracy_change": float(point), "ci_lo": float(lo), "ci_hi": float(hi)})
+            ta, oa = subject_correlations(A[:, :, k], preds["notthefallintact"][roi], lag)
+            tb, ob = subject_correlations(B[:, :, k], preds[task][roi], lag)
+            dt, do = tb - ta, ob - oa
+            idx = rng.integers(0, len(dt), (n_boot, len(dt)))
+            ci = lambda d: np.percentile(d[idx].mean(axis=1), [2.5, 97.5])
+            (tlo, thi), (olo, ohi), (glo, ghi) = ci(dt), ci(do), ci(dt - do)
+            rows.append({"group": g, "roi": roi,
+                         "r_tribe_intact": float(ta.mean()), "r_tribe_scrambled": float(tb.mean()),
+                         "delta_tribe": float(dt.mean()), "delta_tribe_lo": float(tlo), "delta_tribe_hi": float(thi),
+                         "r_others_intact": float(oa.mean()), "r_others_scrambled": float(ob.mean()),
+                         "delta_others": float(do.mean()), "delta_others_lo": float(olo), "delta_others_hi": float(ohi),
+                         "gap": float((dt - do).mean()), "gap_lo": float(glo), "gap_hi": float(ghi)})
     return pd.DataFrame(rows)
+
+
+def tribe_change_from_saved(cfg: Config) -> pd.DataFrame:
+    """Recompute the TRIBE vs human comparison from the saved ROI time courses (no GIfTI reload)."""
+    from ..insilico.analysis import roi_masks
+    from nilearn import datasets
+
+    z = np.load(cfg.output_dir / "narratives_roi_timeseries.npz")
+    roi_names = [str(r) for r in z["roi_names"]]
+    lag = int(z["lag"])
+    data = {tuple(k.split("__")): z[k] for k in z.files if "__" in k}
+    masks = roi_masks(cfg.output_dir / "atlas")
+    atlas = datasets.fetch_atlas_surf_destrieux(data_dir=str(cfg.output_dir / "atlas"), verbose=0)
+    labels = [str(lab) for lab in atlas["labels"]]
+    both = np.concatenate([atlas["map_left"], atlas["map_right"]])
+    for roi, names in EXTRA_ROIS.items():
+        masks[roi] = np.isin(both, [labels.index(n) for n in names])
+    masks = {r: masks[r] for r in roi_names}
+    n_tr = next(iter(data.values())).shape[1]
+    pred_dir = cfg.output_dir / "predictions" / "full"
+    preds = {v: tribe_timecourses(pred_dir / f"{v}.npz", n_tr, masks, cfg.insilico.tribe_offset_s) for v in VERSIONS}
+    out = bootstrap_tribe_change(data, preds, roi_names, lag, np.random.default_rng(0))
+    res = cfg.results_dir / "narratives"
+    res.mkdir(parents=True, exist_ok=True)
+    out.round(4).to_csv(res / "tribe_vs_human_change.tsv", sep="\t", index=False)
+    plot_comparison(out, roi_names, res / "tribe_vs_human.png")
+    return out
+
+
+def plot_comparison(df: pd.DataFrame, rois: list[str], out_png: Path) -> None:
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.4), layout="constrained", sharey=True)
+    x = np.arange(len(rois))
+    for ax, (g, sub) in zip(axes, df.groupby("group", sort=False)):
+        sub = sub.set_index("roi").loc[rois]
+        for off, col, color, label in ((-0.17, "delta_others", "#c0392b", "other listeners (human ceiling)"),
+                                       (0.17, "delta_tribe", "#14707c", "TRIBE v2 prediction")):
+            ax.bar(x + off, sub[col], 0.32, color=color, label=label)
+            ax.errorbar(x + off, sub[col], yerr=[sub[col] - sub[f"{col}_lo"], sub[f"{col}_hi"] - sub[col]],
+                        fmt="none", ecolor="k", capsize=2, lw=1)
+        ax.axhline(0, color="k", lw=0.8)
+        ax.set_xticks(x, rois)
+        ax.set_title(f"{g}-scrambled minus intact (same people)")
+    axes[0].set_ylabel("Change in correlation with each listener")
+    axes[0].legend(frameon=False, fontsize=8)
+    fig.suptitle("Scrambling the story: how well each listener is predicted, by other people vs by TRIBE")
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)
 
 
 def paired_isc_change(data: dict, roi_names: list[str], rng: np.random.Generator, n_boot: int = 5000) -> pd.DataFrame:

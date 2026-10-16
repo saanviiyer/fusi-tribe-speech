@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--narr-dir", default="~/narratives")
     p = sub.add_parser("narratives-analyze", help="TRIBE vs real brains on Narratives 'Not the Fall'")
     p.add_argument("--narr-dir", default="~/narratives")
+    sub.add_parser("narratives-compare", help="Recompute TRIBE vs human change from saved ROI time courses")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -75,6 +76,10 @@ def main(argv: list[str] | None = None) -> None:
         from .narratives.analysis import run_narratives
         out = run_narratives(cfg, Path(args.narr_dir).expanduser(), cfg.output_dir / "predictions" / "full")
         print(out.pivot_table(index="roi", columns=["group", "version"], values="tribe_r_normalised").round(2))
+    elif args.step == "narratives-compare":
+        from .narratives.analysis import tribe_change_from_saved
+        out = tribe_change_from_saved(cfg)
+        print(out[["group", "roi", "delta_others", "delta_tribe", "gap"]].round(3).to_string(index=False))
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

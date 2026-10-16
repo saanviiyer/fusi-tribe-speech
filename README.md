@@ -151,6 +151,39 @@ by about 15% depth, so the text model encodes word order early. TRIBE neverthele
 
 ![Layer-wise separation](results/insilico/layers.png)
 
+**7. On real brains (held out), TRIBE follows the loss of narrative context in most higher
+regions, but not in STS and MTG when the story is cut into short pieces.** In the Narratives
+dataset (Nastase et al. 2021, CC0), 44 people heard "It's Not the Fall That Gets You" intact and
+one temporally scrambled version: sentence-level segments reordered coarsely (22 people) or finely
+(22 people). Narratives is not in TRIBE's training data. I ran TRIBE on the real recordings and
+compared it with each listener, intact versus scrambled within the same people.
+
+The human data reproduce the known hierarchy: scrambling leaves inter-subject correlation in
+Heschl's gyrus almost unchanged (+0.03, a small rise, and −0.01) and lowers it in STS, MTG, IFG, angular gyrus and
+precuneus (−0.06 to −0.23). On the intact story, TRIBE correlates with individual listeners at
+0.11 to 0.29 and reaches 0.38 to 0.56 of the group-mean noise ceiling, depending on the region.
+
+Change in correlation with each listener, scrambled minus intact (95% bootstrap over people):
+
+| Region | coarse: other listeners | coarse: TRIBE | fine: other listeners | fine: TRIBE |
+|---|---|---|---|---|
+| HG | +0.03 | **+0.10** | −0.01 | +0.00 |
+| STS | −0.08 | −0.09 | **−0.10** | −0.03 (n.s.) |
+| MTG | −0.06 | −0.06 | **−0.06** | −0.00 (n.s.) |
+| IFG | −0.06 | −0.06 | −0.07 | −0.06 |
+| Angular gyrus | −0.07 | −0.08 | **−0.17** | −0.10 |
+| Precuneus | **−0.19** | −0.12 | **−0.23** | −0.12 |
+
+With coarse scrambling, TRIBE's fit drops by the same amount as the listeners' shared response in
+STS, MTG, IFG and angular gyrus. With fine scrambling, the listeners' shared response in STS and
+MTG drops while TRIBE's fit does not change; the differences are significant (STS +0.07, MTG +0.06).
+TRIBE's STS and MTG predictions therefore behave like a shorter-timescale region than human STS
+and MTG: they keep tracking sentence content after the narrative context that people integrate is
+gone. Two cautions: the paper does not state whether people heard the scrambled version before or
+after the intact one, and the coarse and fine groups are different people.
+
+![TRIBE vs real brains](results/narratives/tribe_vs_human.png)
+
 ## How it works
 
 ```
@@ -181,7 +214,7 @@ Methods, the full decision log and the limitations are in [docs/methods.md](docs
 ```bash
 python -m venv .venv && source .venv/bin/activate
 make install          # package + TRIBE v2 + pytest
-make test             # 40 unit tests, no data needed (~1 min)
+make test             # 46 unit tests, no data needed (~1 min)
 make all              # needs the run in data/ (see data/README.md); ~1.5 h on an M-series Mac
 ```
 
@@ -237,6 +270,7 @@ src/fusi_tribe/
   insilico/analysis.py retention, paired contrasts, TRIBE timing
   insilico/swaps.py    causal swaps: same audio, edited words
   insilico/layers.py   layer-wise separation inside TRIBE's audio and text encoders
+  narratives/          held-out test on real fMRI (Narratives, "Not the Fall")
   report.py            cross-modality figures
   cli.py               `fusi-tribe` command
 configs/   tests/   docs/   results/ (committed figures and tables)

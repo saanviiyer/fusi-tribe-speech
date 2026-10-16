@@ -85,6 +85,28 @@ log energy regressed out. Text: each control block's words embedded by Llama 3.2
 every dimension z-scored across all blocks, then cosine similarity to the intact block. Floors
 compare different intact passages.
 
+## 2b. Held-out real fMRI (Narratives)
+
+Narratives (Nastase et al. 2021, OpenNeuro ds002345, CC0), "It's Not the Fall That Gets You":
+582 s per version, story from 0:25 to 9:32, TR 1.5 s. The scrambled versions reorder sentence-level
+segments on TR boundaries, coarsely (longscram) or finely (shortscram). Each participant heard the
+intact story and one scrambled version. Preprocessed afni-nosmooth surface data (fsaverage6) from the
+DataLad mirror, reduced to fsaverage5 by keeping the first 10,242 vertices per hemisphere (the meshes
+are nested). The authors' recommended exclusions are applied by dropping those people entirely
+(sub-066, 317, 333, 335), leaving 22 per group, 400 TRs per run. ROIs: the Destrieux regions above
+plus angular gyrus and precuneus.
+
+TRIBE v2 (full mode, A100, float32) predicts each version from its audio. Prediction row *t* is fMRI
+at *t* + 5 s; one extra shift, fitted once on Heschl's gyrus in the intact story and shared by all
+versions, is +3 TR (+4.5 s), most likely the scan start relative to the stimulus file.
+
+Human reliability is leave-one-out inter-subject correlation (ISC). The TRIBE comparison is on one
+scale per listener: r(TRIBE prediction, listener) and r(mean of the other listeners, listener),
+intact versus scrambled within the same people, bootstrap over people. A first version normalised
+TRIBE by a split-half noise ceiling and bootstrapped people with replacement; duplicated people land
+in both halves and inflate the ceiling, and two point estimates fell outside their own intervals.
+It was replaced by the per-listener comparison.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.
@@ -116,6 +138,7 @@ Things that changed the analysis, in the order they came up.
 | 14 | tribev2 misplaces words for chunked audio | First full run: 7 × 678 = 4,746 word events spread over 1,116 s of a 416 s track; predictions ran to 1,200 s | `place_transcript` keeps each chunk's own words on the global clock (tests in `tests/test_tribe_transcripts.py`); `run-tribe` refuses word events that overrun the track or repeat. Invalid run discarded; rerun gives 678 words and 500 s for intact |
 | 15 | Word-recovery figures came from a different transcript than TRIBE used | The summary used CPU (int8) WhisperX transcripts; TRIBE's full runs used its own GPU (float16) transcripts. Vocoded 92.5% vs 95.9%, reversed 10.0% vs 11.6%, rotated 3.7% vs 5.3% | `transcribe` now summarises the transcript TRIBE cached for each run, so the figures are what the text pathway received |
 | 16 | Layer analysis: first text similarity was an artifact | Rotated and reversed transcripts (mostly hallucinated words) scored ~0.95 against the true passage at layers 2-4, far above the 0.42 different-passage floor. A few Llama dimensions with very large activations dominate mean-pooled vectors | Every dimension z-scored across blocks before the cosine; a true-words sanity check scores 1.00. Audio CKA also reported with frame loudness regressed out, since frame-matched CKA rewards a shared envelope; the reversed-speech result survives (0.89-0.94) |
+| 17 | Step 3 bootstrap biased | Resampling people with replacement put duplicates in both split-half halves, inflating the noise ceiling; point estimates fell outside their intervals | Per-listener paired comparison: r(TRIBE, listener) vs r(other listeners, listener), bootstrap over people |
 
 ## 4. Known limitations
 
@@ -127,3 +150,5 @@ Things that changed the analysis, in the order they came up.
 - AR(1) noise with 3-frame temporal smoothing likely understates temporal autocorrelation, so
   the GLM z-values are probably inflated. Treat them as descriptive.
 - TRIBE predicts an *average subject*; retention describes the model, not people.
+- Narratives: the order of intact and scrambled sessions is not reported, and the coarse and fine
+  scrambling groups are different people.

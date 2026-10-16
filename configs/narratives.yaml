@@ -1,0 +1,4 @@
+# Step 3: TRIBE v2 on the Narratives "It's Not the Fall That Gets You" stimuli (held-out real fMRI).
+data_dir: data
+output_dir: outputs_narratives
+results_dir: results

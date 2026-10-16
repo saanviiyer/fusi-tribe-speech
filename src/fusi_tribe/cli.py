@@ -26,6 +26,10 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("make-swaps", help="Causal swap stimuli: same audio, edited control-block words")
     sub.add_parser("analyze-swaps", help="Paired change in retention for each swap vs its reference")
     sub.add_parser("layers", help="Layer-wise separation of controls inside TRIBE's audio and text encoders (GPU)")
+    p = sub.add_parser("narratives-prepare", help="Stage the Narratives 'Not the Fall' audio for run-tribe")
+    p.add_argument("--narr-dir", default="~/narratives")
+    p = sub.add_parser("narratives-analyze", help="TRIBE vs real brains on Narratives 'Not the Fall'")
+    p.add_argument("--narr-dir", default="~/narratives")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -60,6 +64,17 @@ def main(argv: list[str] | None = None) -> None:
     elif args.step == "layers":
         from .insilico.layers import run_layers
         run_layers(cfg)
+    elif args.step == "narratives-prepare":
+        from pathlib import Path
+
+        from .narratives.analysis import prepare_stimuli
+        prepare_stimuli(cfg, Path(args.narr_dir).expanduser())
+    elif args.step == "narratives-analyze":
+        from pathlib import Path
+
+        from .narratives.analysis import run_narratives
+        out = run_narratives(cfg, Path(args.narr_dir).expanduser(), cfg.output_dir / "predictions" / "full")
+        print(out.pivot_table(index="roi", columns=["group", "version"], values="tribe_r_normalised").round(2))
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

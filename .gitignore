@@ -20,3 +20,4 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 outputs_tts_variant/
+outputs_narratives/

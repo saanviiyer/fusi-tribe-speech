@@ -1,0 +1,175 @@
+condition	layer	depth	similarity	n_blocks
+different passage (floor)	0	0.0	0.2648	7
+lowpass	0	0.0	0.988	7
+vocoded	0	0.0	0.9016	7
+rotated	0	0.0	-0.2128	7
+reversed	0	0.0	-0.0832	7
+swap_intact_shuffled	0	0.0	0.996	7
+different passage (floor)	1	0.0357	0.2288	7
+lowpass	1	0.0357	0.9924	7
+vocoded	1	0.0357	0.9363	7
+rotated	1	0.0357	0.0766	7
+reversed	1	0.0357	0.2184	7
+swap_intact_shuffled	1	0.0357	0.8979	7
+different passage (floor)	2	0.0714	0.4266	7
+lowpass	2	0.0714	0.9999	7
+vocoded	2	0.0714	0.9993	7
+rotated	2	0.0714	0.971	7
+reversed	2	0.0714	0.9785	7
+swap_intact_shuffled	2	0.0714	0.9967	7
+different passage (floor)	3	0.1071	0.4243	7
+lowpass	3	0.1071	0.9997	7
+vocoded	3	0.1071	0.9985	7
+rotated	3	0.1071	0.9471	7
+reversed	3	0.1071	0.9605	7
+swap_intact_shuffled	3	0.1071	0.9797	7
+different passage (floor)	4	0.1429	0.4194	7
+lowpass	4	0.1429	0.9995	7
+vocoded	4	0.1429	0.9967	7
+rotated	4	0.1429	0.9143	7
+reversed	4	0.1429	0.9348	7
+swap_intact_shuffled	4	0.1429	0.9646	7
+different passage (floor)	5	0.1786	0.4101	7
+lowpass	5	0.1786	0.9989	7
+vocoded	5	0.1786	0.9938	7
+rotated	5	0.1786	0.8847	7
+reversed	5	0.1786	0.9129	7
+swap_intact_shuffled	5	0.1786	0.9546	7
+different passage (floor)	6	0.2143	0.4055	7
+lowpass	6	0.2143	0.9983	7
+vocoded	6	0.2143	0.9913	7
+rotated	6	0.2143	0.8597	7
+reversed	6	0.2143	0.8961	7
+swap_intact_shuffled	6	0.2143	0.9351	7
+different passage (floor)	7	0.25	0.3981	7
+lowpass	7	0.25	0.9982	7
+vocoded	7	0.25	0.9883	7
+rotated	7	0.25	0.8244	7
+reversed	7	0.25	0.8718	7
+swap_intact_shuffled	7	0.25	0.8878	7
+different passage (floor)	8	0.2857	0.3865	7
+lowpass	8	0.2857	0.9976	7
+vocoded	8	0.2857	0.9837	7
+rotated	8	0.2857	0.8012	7
+reversed	8	0.2857	0.8445	7
+swap_intact_shuffled	8	0.2857	0.8874	7
+different passage (floor)	9	0.3214	0.3817	7
+lowpass	9	0.3214	0.9974	7
+vocoded	9	0.3214	0.981	7
+rotated	9	0.3214	0.7848	7
+reversed	9	0.3214	0.8323	7
+swap_intact_shuffled	9	0.3214	0.8719	7
+different passage (floor)	10	0.3571	0.3781	7
+lowpass	10	0.3571	0.9976	7
+vocoded	10	0.3571	0.9785	7
+rotated	10	0.3571	0.7588	7
+reversed	10	0.3571	0.8108	7
+swap_intact_shuffled	10	0.3571	0.8368	7
+different passage (floor)	11	0.3929	0.3807	7
+lowpass	11	0.3929	0.9975	7
+vocoded	11	0.3929	0.9775	7
+rotated	11	0.3929	0.7498	7
+reversed	11	0.3929	0.7931	7
+swap_intact_shuffled	11	0.3929	0.806	7
+different passage (floor)	12	0.4286	0.3626	7
+lowpass	12	0.4286	0.9973	7
+vocoded	12	0.4286	0.9732	7
+rotated	12	0.4286	0.7095	7
+reversed	12	0.4286	0.7571	7
+swap_intact_shuffled	12	0.4286	0.7801	7
+different passage (floor)	13	0.4643	0.3516	7
+lowpass	13	0.4643	0.9975	7
+vocoded	13	0.4643	0.9713	7
+rotated	13	0.4643	0.6754	7
+reversed	13	0.4643	0.7219	7
+swap_intact_shuffled	13	0.4643	0.7585	7
+different passage (floor)	14	0.5	0.3436	7
+lowpass	14	0.5	0.9974	7
+vocoded	14	0.5	0.9699	7
+rotated	14	0.5	0.6274	7
+reversed	14	0.5	0.6864	7
+swap_intact_shuffled	14	0.5	0.7388	7
+different passage (floor)	15	0.5357	0.3215	7
+lowpass	15	0.5357	0.9973	7
+vocoded	15	0.5357	0.9637	7
+rotated	15	0.5357	0.5496	7
+reversed	15	0.5357	0.62	7
+swap_intact_shuffled	15	0.5357	0.6335	7
+different passage (floor)	16	0.5714	0.3108	7
+lowpass	16	0.5714	0.996	7
+vocoded	16	0.5714	0.9557	7
+rotated	16	0.5714	0.4904	7
+reversed	16	0.5714	0.5481	7
+swap_intact_shuffled	16	0.5714	0.5599	7
+different passage (floor)	17	0.6071	0.3034	7
+lowpass	17	0.6071	0.996	7
+vocoded	17	0.6071	0.9524	7
+rotated	17	0.6071	0.438	7
+reversed	17	0.6071	0.4894	7
+swap_intact_shuffled	17	0.6071	0.5386	7
+different passage (floor)	18	0.6429	0.3048	7
+lowpass	18	0.6429	0.9956	7
+vocoded	18	0.6429	0.9486	7
+rotated	18	0.6429	0.411	7
+reversed	18	0.6429	0.4562	7
+swap_intact_shuffled	18	0.6429	0.4996	7
+different passage (floor)	19	0.6786	0.3029	7
+lowpass	19	0.6786	0.9955	7
+vocoded	19	0.6786	0.9468	7
+rotated	19	0.6786	0.3824	7
+reversed	19	0.6786	0.4294	7
+swap_intact_shuffled	19	0.6786	0.4849	7
+different passage (floor)	20	0.7143	0.2646	7
+lowpass	20	0.7143	0.9955	7
+vocoded	20	0.7143	0.9376	7
+rotated	20	0.7143	0.2934	7
+reversed	20	0.7143	0.3334	7
+swap_intact_shuffled	20	0.7143	0.4045	7
+different passage (floor)	21	0.75	0.2517	7
+lowpass	21	0.75	0.995	7
+vocoded	21	0.75	0.9293	7
+rotated	21	0.75	0.252	7
+reversed	21	0.75	0.2963	7
+swap_intact_shuffled	21	0.75	0.3761	7
+different passage (floor)	22	0.7857	0.2469	7
+lowpass	22	0.7857	0.9941	7
+vocoded	22	0.7857	0.9234	7
+rotated	22	0.7857	0.2191	7
+reversed	22	0.7857	0.2654	7
+swap_intact_shuffled	22	0.7857	0.3326	7
+different passage (floor)	23	0.8214	0.2302	7
+lowpass	23	0.8214	0.9935	7
+vocoded	23	0.8214	0.9165	7
+rotated	23	0.8214	0.1781	7
+reversed	23	0.8214	0.2372	7
+swap_intact_shuffled	23	0.8214	0.3538	7
+different passage (floor)	24	0.8571	0.2177	7
+lowpass	24	0.8571	0.9928	7
+vocoded	24	0.8571	0.9082	7
+rotated	24	0.8571	0.1389	7
+reversed	24	0.8571	0.2002	7
+swap_intact_shuffled	24	0.8571	0.323	7
+different passage (floor)	25	0.8929	0.2207	7
+lowpass	25	0.8929	0.9903	7
+vocoded	25	0.8929	0.8861	7
+rotated	25	0.8929	0.1228	7
+reversed	25	0.8929	0.1818	7
+swap_intact_shuffled	25	0.8929	0.2258	7
+different passage (floor)	26	0.9286	0.2068	7
+lowpass	26	0.9286	0.9895	7
+vocoded	26	0.9286	0.8766	7
+rotated	26	0.9286	0.0783	7
+reversed	26	0.9286	0.133	7
+swap_intact_shuffled	26	0.9286	0.2445	7
+different passage (floor)	27	0.9643	0.202	7
+lowpass	27	0.9643	0.9861	7
+vocoded	27	0.9643	0.8475	7
+rotated	27	0.9643	0.0335	7
+reversed	27	0.9643	0.097	7
+swap_intact_shuffled	27	0.9643	0.19	7
+different passage (floor)	28	1.0	0.1414	7
+lowpass	28	1.0	0.9772	7
+vocoded	28	1.0	0.7752	7
+rotated	28	1.0	-0.1393	7
+reversed	28	1.0	-0.1322	7
+swap_intact_shuffled	28	1.0	0.0272	7

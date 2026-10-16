@@ -7,11 +7,16 @@ passage with the same passage spoken intact:
 
 * Audio: frame-level linear CKA between the condition's and the intact
   passage's hidden states (reversed speech is flipped back into register),
-  pooled over the seven control passages. Floor: CKA between two *different*
-  intact passages.
+  pooled over the seven control passages. Frame-matched CKA also rewards a
+  shared loudness envelope, so a second score regresses each frame's log
+  energy out of both sides first. Floor: CKA between two *different* intact
+  passages.
 * Text: each block's words, embedded with the preceding words of its run as
-  context (as TRIBE does), mean-pooled per block; centred cosine similarity to
-  the intact block. Floor: similarity between different intact passages.
+  context (as TRIBE does), mean-pooled per block. Llama has a few dimensions
+  with very large activations at some tokens (e.g. punctuation) that would
+  dominate a plain cosine, so every dimension is z-scored across all blocks
+  before the cosine with the intact block. Floor: different intact passages.
+  Sanity check: rotated audio paired with the true words should score near 1.
 
 Needs a GPU for reasonable runtime. Writes results/insilico/layers_{audio,text}.tsv
 and layers.png.
@@ -35,7 +40,8 @@ from ..config import Config
 AUDIO_MODEL = "facebook/w2v-bert-2.0"
 TEXT_MODEL = "meta-llama/Llama-3.2-3B"
 AUDIO_CONDS = ("lowpass", "vocoded", "rotated", "reversed")
-TEXT_CONDS = ("lowpass", "vocoded", "rotated", "reversed", "swap_intact_shuffled")
+TEXT_CONDS = ("lowpass", "vocoded", "rotated", "reversed", "swap_intact_shuffled",
+              "swap_rotated_truewords")   # last one: sanity check, true words
 TRIBE_DEPTHS = (0.5, 0.75, 1.0)
 MAX_CONTEXT_WORDS = 1024
 
@@ -65,7 +71,7 @@ def audio_layers(cfg: Config, device: str) -> pd.DataFrame:
     model = Wav2Vec2BertModel.from_pretrained(AUDIO_MODEL).to(device).eval()
 
     def states(cond: str) -> list[list[np.ndarray]]:
-        """Per control passage: list over layers of (frames, dims)."""
+        """Per control passage: list over layers of (frames, dims); last entry is frame log-energy."""
         x, sr = sf.read(stim / manifest["conditions"][cond]["path"], dtype="float32")
         out = []
         for b in _control_blocks(manifest, cond):
@@ -73,32 +79,47 @@ def audio_layers(cfg: Config, device: str) -> pd.DataFrame:
             inp = fe(seg, sampling_rate=sr, return_tensors="pt").to(device)
             with torch.no_grad():
                 hs = model(**inp, output_hidden_states=True).hidden_states
-            out.append([h[0].float().cpu().numpy() for h in hs])
+            layers = [h[0].float().cpu().numpy() for h in hs]
+            n = layers[0].shape[0]
+            edges = np.linspace(0, len(seg), n + 1).astype(int)
+            energy = np.array([np.log(np.mean(seg[a:b] ** 2) + 1e-10) for a, b in zip(edges[:-1], edges[1:])])
+            out.append(layers + [energy[:, None]])
         return out
 
     ref = states("intact")
-    n_layers = len(ref[0])
-    rows = []
+    n_layers = len(ref[0]) - 1          # last entry is energy
 
-    def pooled_cka(a: list[list[np.ndarray]], b: list[list[np.ndarray]], flip: bool) -> list[float]:
+    def residual(F: np.ndarray, e: np.ndarray) -> np.ndarray:
+        D = np.column_stack([np.ones(len(e)), e])
+        beta, *_ = np.linalg.lstsq(D, F, rcond=None)
+        return F - D @ beta
+
+    def pooled_cka(a, b, flip: bool, remove_energy: bool) -> list[float]:
         res = []
         for layer in range(n_layers):
             xs, ys = [], []
             for pa, pb in zip(a, b):
-                fa, fb = pa[layer], pb[layer]
+                fa, fb, ea, eb = pa[layer], pb[layer], pa[-1], pb[-1]
                 if flip:
-                    fa = fa[::-1]
+                    fa, ea = fa[::-1], ea[::-1]
                 n = min(len(fa), len(fb))
-                xs.append(fa[:n]); ys.append(fb[:n])
+                fa, fb, ea, eb = fa[:n], fb[:n], ea[:n, 0], eb[:n, 0]
+                if remove_energy:   # remove both passages' loudness from both sides
+                    E = np.column_stack([ea, eb])
+                    fa, fb = residual(fa, E), residual(fb, E)
+                xs.append(fa); ys.append(fb)
             res.append(linear_cka(np.concatenate(xs), np.concatenate(ys)))
         return res
 
-    floor = pooled_cka(ref[1:] + ref[:1], ref, flip=False)   # different passages
-    for layer, v in enumerate(floor):
-        rows.append({"condition": "different passage (floor)", "layer": layer, "depth": layer / (n_layers - 1), "cka": v})
-    for cond in AUDIO_CONDS:
-        for layer, v in enumerate(pooled_cka(states(cond), ref, flip=(cond == "reversed"))):
-            rows.append({"condition": cond, "layer": layer, "depth": layer / (n_layers - 1), "cka": v})
+    rows = []
+    pairs = [("different passage (floor)", ref[1:] + ref[:1], False)]
+    pairs += [(cond, states(cond), cond == "reversed") for cond in AUDIO_CONDS]
+    for name, st, flip in pairs:
+        plain = pooled_cka(st, ref, flip, remove_energy=False)
+        no_env = pooled_cka(st, ref, flip, remove_energy=True)
+        for layer in range(n_layers):
+            rows.append({"condition": name, "layer": layer, "depth": layer / (n_layers - 1),
+                         "cka": plain[layer], "cka_energy_removed": no_env[layer]})
     return pd.DataFrame(rows)
 
 
@@ -148,10 +169,11 @@ def text_layers(cfg: Config, device: str) -> pd.DataFrame:
     V = {c: block_vectors(c) for c in conds}
     n_layers = next(v for v in V["intact"] if v is not None).shape[0]
     all_vecs = np.stack([v for c in conds for v in V[c] if v is not None])    # (N, L, D)
-    mean = all_vecs.mean(axis=0)                                              # remove the common direction
+    mean = all_vecs.mean(axis=0)
+    sd = all_vecs.std(axis=0) + 1e-6      # z-score every dimension: no single dimension dominates
 
     def sim(a, b, layer):
-        x, y = a[layer] - mean[layer], b[layer] - mean[layer]
+        x, y = (a[layer] - mean[layer]) / sd[layer], (b[layer] - mean[layer]) / sd[layer]
         return float(x @ y / (np.linalg.norm(x) * np.linalg.norm(y)))
 
     rows = []
@@ -190,15 +212,20 @@ def run_layers(cfg: Config, device: str | None = None) -> None:
 
 def plot_layers(audio: pd.DataFrame, text: pd.DataFrame, out_png: Path) -> None:
     styles = {"lowpass": "#c0392b", "vocoded": "#d35400", "rotated": "#8e44ad", "reversed": "#16a085",
-              "swap_intact_shuffled": "#2c3e50", "different passage (floor)": "#95a5a6"}
+              "swap_intact_shuffled": "#2c3e50", "swap_rotated_truewords": "#7f8c8d",
+              "different passage (floor)": "#95a5a6"}
     fig, axes = plt.subplots(1, 2, figsize=(13, 4.4), layout="constrained")
-    for ax, df, col, title in ((axes[0], audio, "cka", "Wav2Vec-BERT 2.0 (audio): CKA with intact passage"),
+    for ax, df, col, title in ((axes[0], audio, "cka_energy_removed",
+                                "Wav2Vec-BERT 2.0 (audio): CKA with intact passage, loudness removed"),
                                (axes[1], text, "similarity", "Llama 3.2-3B (text): similarity to intact passage")):
         for d in TRIBE_DEPTHS:
             ax.axvline(d, color="#bdc3c7", lw=6, alpha=0.4, zorder=0)
         for cond, sub in df.groupby("condition", sort=False):
             ls = "--" if "floor" in cond else "-"
-            label = cond.replace("swap_intact_shuffled", "shuffled word order")
+            label = (cond.replace("swap_intact_shuffled", "shuffled word order")
+                     .replace("swap_rotated_truewords", "rotated + true words (sanity check)"))
+            if cond == "swap_rotated_truewords":
+                ls = ":"
             ax.plot(sub.depth, sub[col], ls, color=styles.get(cond, "k"), lw=2, label=label)
         ax.set(xlabel="Relative layer depth (bands: layers TRIBE uses)", ylabel=col, title=title, xlim=(0, 1))
         ax.legend(frameon=False, fontsize=8)

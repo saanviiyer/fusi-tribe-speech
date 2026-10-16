@@ -237,6 +237,9 @@ def transcription_summary(cfg: Config) -> pd.DataFrame:
 
     `matched` counts control-block words that occur in the passage actually
     spoken there; intact speech is the reference for how many words exist.
+    Uses the transcript TRIBE itself cached next to each audio file during
+    full-mode runs (exactly what the text pathway received) when it exists,
+    otherwise transcribes with `transcribe`.
     """
     import re
 
@@ -249,8 +252,13 @@ def transcription_summary(cfg: Config) -> pd.DataFrame:
     norm = lambda w: re.sub(r"[^a-z']", "", str(w).lower())
     rows = []
     for cond, info in manifest["conditions"].items():
+        if "swap" in info:
+            continue
         path = out / f"{cond}.tsv"
-        if path.exists():
+        tribe_cached = (stim / info["path"]).with_suffix(".tsv")
+        if tribe_cached.exists():
+            words = pd.read_csv(tribe_cached, sep="\t")
+        elif path.exists():
             words = pd.read_csv(path, sep="\t")
         else:
             words = transcribe(stim / info["path"])

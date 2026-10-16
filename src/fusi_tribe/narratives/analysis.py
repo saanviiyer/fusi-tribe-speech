@@ -208,11 +208,45 @@ def run_narratives(cfg: Config, narr_dir: Path, pred_dir: Path) -> pd.DataFrame:
     out = pd.DataFrame(rows)
     res = cfg.results_dir / "narratives"
     res.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(cfg.output_dir / "narratives_roi_timeseries.npz", roi_names=np.array(roi_names), lag=lag,
+                        **{f"{g}__{v}": arr for (g, v), arr in data.items()})
+    preds = {v: tribe_timecourses(pred_dir / f"{v}.npz", n_tr, masks, cfg.insilico.tribe_offset_s) for v in VERSIONS}
+    tribe_change = bootstrap_tribe_change(data, preds, roi_names, lag, rng)
+    tribe_change.round(4).to_csv(res / "tribe_accuracy_change.tsv", sep="\t", index=False)
     out.round(4).to_csv(res / "narratives_summary.tsv", sep="\t", index=False)
     paired = paired_isc_change(data, roi_names, rng)
     paired.round(4).to_csv(res / "isc_change.tsv", sep="\t", index=False)
     plot_narratives(out, paired, roi_names, res / "narratives.png")
     return out
+
+
+def normalised_accuracy(ts: np.ndarray, pred: np.ndarray, lag: int, rng, n_splits: int) -> float:
+    sl = slice(max(lag, 0), ts.shape[1] + min(lag, 0))
+    p = np.roll(zscore(pred), lag)[sl]
+    r = np.corrcoef(p, ts.mean(0)[sl])[0, 1]
+    ceil = split_half_ceiling(ts[:, sl], rng, n_splits)
+    return r / ceil if ceil > 0 else np.nan
+
+
+def bootstrap_tribe_change(data: dict, preds: dict, roi_names: list[str], lag: int,
+                           rng: np.random.Generator, n_boot: int = 500, n_splits: int = 20) -> pd.DataFrame:
+    """Scrambled minus intact TRIBE accuracy (r / noise ceiling), resampling the same people for both."""
+    rows = []
+    for g, task in GROUPS.items():
+        A, B = data[(g, "notthefallintact")], data[(g, task)]
+        n = len(A)
+        for k, roi in enumerate(roi_names):
+            pa, pb = preds["notthefallintact"][roi], preds[task][roi]
+            point = (normalised_accuracy(B[:, :, k], pb, lag, rng, N_SPLITS)
+                     - normalised_accuracy(A[:, :, k], pa, lag, rng, N_SPLITS))
+            boots = []
+            for _ in range(n_boot):
+                idx = rng.integers(0, n, n)
+                boots.append(normalised_accuracy(B[idx, :, k], pb, lag, rng, n_splits)
+                             - normalised_accuracy(A[idx, :, k], pa, lag, rng, n_splits))
+            lo, hi = np.nanpercentile(boots, [2.5, 97.5])
+            rows.append({"group": g, "roi": roi, "accuracy_change": float(point), "ci_lo": float(lo), "ci_hi": float(hi)})
+    return pd.DataFrame(rows)
 
 
 def paired_isc_change(data: dict, roi_names: list[str], rng: np.random.Generator, n_boot: int = 5000) -> pd.DataFrame:

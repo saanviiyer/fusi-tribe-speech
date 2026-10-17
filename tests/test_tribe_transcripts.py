@@ -17,3 +17,10 @@ def test_words_are_not_duplicated_across_chunks():
     chunks = [(o, o, min(60.0, 416 - o)) for o in range(0, 416, 60)]
     total = sum(len(place_transcript(transcript, *c)) for c in chunks)
     assert total == len(transcript)
+
+
+def test_truncate_context_keeps_target_and_n_preceding_words():
+    from fusi_tribe.insilico.tribe import truncate_context
+    assert truncate_context("a b c d e", 2) == "c d e"
+    assert truncate_context("a b", 5) == "a b"
+    assert truncate_context("a b c", 0) == "c"

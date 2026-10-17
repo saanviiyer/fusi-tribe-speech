@@ -340,3 +340,77 @@ def plot_narratives(summary: pd.DataFrame, paired: pd.DataFrame, rois: list[str]
     axes[1].legend(frameon=False, fontsize=8)
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
+
+
+CONTEXT_SETTINGS = (("audio only", "audio_only"), ("1", "full_ctx1"), ("8", "full_ctx8"),
+                    ("32", "full_ctx32"), ("128", "full_ctx128"), ("1024", "full"))
+
+
+def context_sweep(cfg: Config, n_boot: int = 5000) -> pd.DataFrame:
+    """Per-listener fit of TRIBE on the intact story as its text context window shrinks.
+
+    Uses the saved ROI time courses (all 44 listeners heard the intact story) and the shared
+    lag. For each setting: mean r(TRIBE, listener) with a bootstrap CI over listeners, and the
+    paired gain over the audio-only model.
+    """
+    from ..insilico.analysis import roi_masks
+    from nilearn import datasets
+
+    z = np.load(cfg.output_dir / "narratives_roi_timeseries.npz")
+    roi_names = [str(r) for r in z["roi_names"]]
+    lag = int(z["lag"])
+    intact = np.concatenate([z[f"{g}__notthefallintact"] for g in GROUPS])
+    masks = roi_masks(cfg.output_dir / "atlas")
+    atlas = datasets.fetch_atlas_surf_destrieux(data_dir=str(cfg.output_dir / "atlas"), verbose=0)
+    labels = [str(lab) for lab in atlas["labels"]]
+    both = np.concatenate([atlas["map_left"], atlas["map_right"]])
+    for roi, names in EXTRA_ROIS.items():
+        masks[roi] = np.isin(both, [labels.index(n) for n in names])
+    masks = {r: masks[r] for r in roi_names}
+    pred_root = cfg.output_dir / "predictions"
+    rng = np.random.default_rng(0)
+    per_listener = {}
+    rows = []
+    for label, folder in CONTEXT_SETTINGS:
+        path = pred_root / folder / "notthefallintact.npz"
+        if not path.exists():
+            print(f"  missing {path}, skipping")
+            continue
+        pred = tribe_timecourses(path, intact.shape[1], masks, cfg.insilico.tribe_offset_s)
+        for k, roi in enumerate(roi_names):
+            r, _ = subject_correlations(intact[:, :, k], pred[roi], lag)
+            per_listener[(label, roi)] = r
+    for (label, roi), r in per_listener.items():
+        idx = rng.integers(0, len(r), (n_boot, len(r)))
+        lo, hi = np.percentile(r[idx].mean(axis=1), [2.5, 97.5])
+        row = {"setting": label, "roi": roi, "r_mean": float(r.mean()), "ci_lo": float(lo), "ci_hi": float(hi)}
+        base = per_listener.get(("audio only", roi))
+        if base is not None:
+            d = r - base
+            glo, ghi = np.percentile(d[idx].mean(axis=1), [2.5, 97.5])
+            row |= {"gain_over_audio": float(d.mean()), "gain_lo": float(glo), "gain_hi": float(ghi)}
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    res = cfg.results_dir / "narratives"
+    res.mkdir(parents=True, exist_ok=True)
+    out.round(4).to_csv(res / "context_sweep.tsv", sep="\t", index=False)
+    _plot_context(out, roi_names, res / "context_sweep.png")
+    return out
+
+
+def _plot_context(df: pd.DataFrame, rois: list[str], out_png: Path) -> None:
+    settings = [s for s, _ in CONTEXT_SETTINGS if s in set(df.setting)]
+    x = np.arange(len(settings))
+    fig, ax = plt.subplots(figsize=(9, 4.6), layout="constrained")
+    colors = plt.cm.viridis(np.linspace(0.05, 0.9, len(rois)))
+    for c, roi in zip(colors, rois):
+        sub = df[df.roi == roi].set_index("setting").reindex(settings)
+        ax.errorbar(x, sub.r_mean, yerr=[sub.r_mean - sub.ci_lo, sub.ci_hi - sub.r_mean],
+                    color=c, marker="o", lw=1.8, capsize=2, label=roi)
+    ax.set_xticks(x, settings)
+    ax.set(xlabel="Text context given to TRIBE (preceding words per word)",
+           ylabel="Correlation with each listener (mean)",
+           title="How much context does TRIBE need? Intact story, 44 listeners")
+    ax.legend(frameon=False, fontsize=8, ncol=2)
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)

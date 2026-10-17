@@ -20,6 +20,7 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("run-tribe", help="TRIBE v2 predictions for each simulated run")
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
     p.add_argument("--conditions", nargs="+")
+    p.add_argument("--context-words", type=int, help="Full mode only: preceding words of text context per word")
     sub.add_parser("transcribe", help="What TRIBE's text pathway hears in each control (WhisperX)")
     p = sub.add_parser("analyze-tribe", help="Retention, paired contrasts and timing from predictions")
     p.add_argument("--mode", choices=["audio_only", "full"], default="audio_only")
@@ -31,6 +32,7 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("narratives-analyze", help="TRIBE vs real brains on Narratives 'Not the Fall'")
     p.add_argument("--narr-dir", default="~/narratives")
     sub.add_parser("narratives-compare", help="Recompute TRIBE vs human change from saved ROI time courses")
+    sub.add_parser("narratives-context", help="How much text context TRIBE needs, region by region (Narratives intact)")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -46,7 +48,7 @@ def main(argv: list[str] | None = None) -> None:
         make_stimuli(cfg, args.only, args.force)
     elif args.step == "run-tribe":
         from .insilico.tribe import run_tribe
-        run_tribe(cfg, args.mode, args.conditions)
+        run_tribe(cfg, args.mode, args.conditions, args.context_words)
     elif args.step == "transcribe":
         from .insilico.tribe import transcription_summary
         print(transcription_summary(cfg).to_string(index=False))
@@ -80,6 +82,10 @@ def main(argv: list[str] | None = None) -> None:
         from .narratives.analysis import tribe_change_from_saved
         out = tribe_change_from_saved(cfg)
         print(out[["group", "roi", "delta_others", "delta_tribe", "gap"]].round(3).to_string(index=False))
+    elif args.step == "narratives-context":
+        from .narratives.analysis import context_sweep
+        out = context_sweep(cfg)
+        print(out.pivot(index="roi", columns="setting", values="r_mean").round(3).to_string())
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

@@ -190,14 +190,24 @@ def load_tribe(cache: Path, device: str | None = None):
     return model, device
 
 
-def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Path:
+def truncate_context(context: str, n_words: int) -> str:
+    """Keep the target word plus its `n_words` preceding words (TRIBE stores context as text
+    ending with the target word, up to 1,024 preceding words)."""
+    words = str(context).split()
+    return " ".join(words[-(n_words + 1):])
+
+
+def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None,
+              context_words: int | None = None) -> Path:
     from tribev2.demo_utils import get_audio_and_text_events
 
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
     stim_dir = cfg.output_dir / "stimuli"
     manifest = json.loads((stim_dir / "manifest.json").read_text())
-    out_dir = cfg.output_dir / "predictions" / mode
+    if context_words is not None and mode != "full":
+        raise ValueError("--context-words needs --mode full")
+    out_dir = cfg.output_dir / "predictions" / (mode if context_words is None else f"full_ctx{context_words}")
     out_dir.mkdir(parents=True, exist_ok=True)
     model, device = load_tribe(cfg.output_dir / "tribe_cache")
     if mode == "full":
@@ -214,6 +224,10 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None) -> Pa
             pd.DataFrame([{"type": "Audio", "filepath": str(wav), "start": 0,
                            "timeline": cond, "subject": "default"}]),
             audio_only=(mode == "audio_only"))
+        if context_words is not None:
+            is_word = events.type == "Word"
+            events.loc[is_word, "context"] = events.loc[is_word, "context"].map(
+                lambda c: truncate_context(c, context_words))
         words = events[events.type == "Word"]
         total_s = manifest["total_s"]
         if len(words) and (words.start.max() > total_s or words.duplicated(["start", "text"]).any()):

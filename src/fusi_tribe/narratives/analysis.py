@@ -394,6 +394,20 @@ def context_sweep(cfg: Config, n_boot: int = 5000) -> pd.DataFrame:
     res = cfg.results_dir / "narratives"
     res.mkdir(parents=True, exist_ok=True)
     out.round(4).to_csv(res / "context_sweep.tsv", sep="\t", index=False)
+    # Saturation: is the full (1,024-word) fit reliably better than each shorter window?
+    sat = []
+    for roi in roi_names:
+        if ("1024", roi) not in per_listener:
+            continue
+        for n in ("1", "8", "32", "128"):
+            if (n, roi) not in per_listener:
+                continue
+            d = per_listener[("1024", roi)] - per_listener[(n, roi)]
+            idx = rng.integers(0, len(d), (n_boot, len(d)))
+            lo, hi = np.percentile(d[idx].mean(axis=1), [2.5, 97.5])
+            sat.append({"roi": roi, "shorter_window": n, "full_minus_shorter": float(d.mean()),
+                        "ci_lo": float(lo), "ci_hi": float(hi), "full_reliably_better": bool(lo > 0)})
+    pd.DataFrame(sat).round(4).to_csv(res / "context_saturation.tsv", sep="\t", index=False)
     _plot_context(out, roi_names, res / "context_sweep.png")
     return out
 

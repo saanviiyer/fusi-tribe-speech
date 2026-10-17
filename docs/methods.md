@@ -107,6 +107,14 @@ TRIBE by a split-half noise ceiling and bootstrapped people with replacement; du
 in both halves and inflate the ceiling, and two point estimates fell outside their own intervals.
 It was replaced by the per-listener comparison.
 
+**Context sweep.** TRIBE stores each word's text context as the preceding words plus the word
+itself (up to 1,024 preceding words). `run-tribe --context-words N` keeps the last N + 1 words of
+that string before feature extraction; the intact story was run with N = 1, 8, 32, 128, plus an
+audio-only run. A check confirmed truncation changes the predictions (correlation 0.76 between the
+1-word and 1,024-word runs across all values), so no cached features were reused. Fit is
+r(TRIBE, listener) on all 44 intact listeners with the shared lag; saturation compares the
+1,024-word fit with each shorter window, paired over listeners.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.
@@ -139,6 +147,7 @@ Things that changed the analysis, in the order they came up.
 | 15 | Word-recovery figures came from a different transcript than TRIBE used | The summary used CPU (int8) WhisperX transcripts; TRIBE's full runs used its own GPU (float16) transcripts. Vocoded 92.5% vs 95.9%, reversed 10.0% vs 11.6%, rotated 3.7% vs 5.3% | `transcribe` now summarises the transcript TRIBE cached for each run, so the figures are what the text pathway received |
 | 16 | Layer analysis: first text similarity was an artifact | Rotated and reversed transcripts (mostly hallucinated words) scored ~0.95 against the true passage at layers 2-4, far above the 0.42 different-passage floor. A few Llama dimensions with very large activations dominate mean-pooled vectors | Every dimension z-scored across blocks before the cosine; a true-words sanity check scores 1.00. Audio CKA also reported with frame loudness regressed out, since frame-matched CKA rewards a shared envelope; the reversed-speech result survives (0.89-0.94) |
 | 17 | Step 3 bootstrap biased | Resampling people with replacement put duplicates in both split-half halves, inflating the noise ceiling; point estimates fell outside their intervals | Per-listener paired comparison: r(TRIBE, listener) vs r(other listeners, listener), bootstrap over people |
+| 18 | Finding 7 over-interpreted | I first described TRIBE's STS and MTG as "a shorter-timescale region" from the scrambling result alone. The context sweep shows TRIBE's STS fit keeps improving to 1,024 words | Finding 7 rewritten; the short-memory reading is kept only for precuneus (and MTG), where the sweep supports it |
 
 ## 4. Known limitations
 

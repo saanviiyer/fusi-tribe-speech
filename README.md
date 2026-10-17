@@ -176,13 +176,38 @@ Change in correlation with each listener, scrambled minus intact (95% bootstrap 
 
 With coarse scrambling, TRIBE's fit drops by the same amount as the listeners' shared response in
 STS, MTG, IFG and angular gyrus. With fine scrambling, the listeners' shared response in STS and
-MTG drops while TRIBE's fit does not change; the differences are significant (STS +0.07, MTG +0.06).
-TRIBE's STS and MTG predictions therefore behave like a shorter-timescale region than human STS
-and MTG: they keep tracking sentence content after the narrative context that people integrate is
-gone. Two cautions: the paper does not state whether people heard the scrambled version before or
-after the intact one, and the coarse and fine groups are different people.
+MTG drops while TRIBE's fit does not change (gaps +0.07 and +0.06), and in precuneus TRIBE's fit
+drops much less than the listeners' (gaps +0.07 coarse, +0.11 fine). Finding 8 tests why. Two
+cautions: the paper does not state whether people heard the scrambled version before or after
+the intact one, and the coarse and fine groups are different people.
 
 ![TRIBE vs real brains](results/narratives/tribe_vs_human.png)
+
+**8. How much context TRIBE uses, region by region: too little in precuneus, plenty but
+order-blind in STS.** TRIBE gives its language model each word with up to 1,024 preceding words.
+I reran it on the intact "Not the Fall" story with that window cut to 1, 8, 32 and 128 words, and
+with no text at all, then measured the fit to all 44 listeners. The regions sort into four groups:
+
+| How TRIBE uses text context | Regions | Evidence (paired over 44 listeners) |
+|---|---|---|
+| Text lowers the fit | Heschl's gyrus | audio only 0.32, full text 0.28 |
+| Word identity, no gain from context | STG | 1 word fits as well as 1,024 |
+| Short context, saturates by ~8 words | MTG, precuneus | 1,024 words no better than 8 |
+| Long context, still improving past 128 words | PT, STS, IFG, angular gyrus | 1,024 reliably better than 128 (+0.012 to +0.015) |
+
+The angular gyrus depends on text almost entirely: audio alone predicts it at r = 0.01, one word
+of text raises that to 0.10, and full context to 0.15.
+
+This changes how finding 7 reads. In human listeners, the precuneus integrates information over
+the longest stretches of a story, and it lost the most consistency when the story was scrambled.
+TRIBE's precuneus prediction saturates at about 8 words, and its fit to listeners dropped much less
+under scrambling. Both results point the same way: TRIBE gives the precuneus a far shorter memory
+than people have. STS is different. TRIBE's STS prediction keeps improving with up to 1,024 words of
+context, so the short-window explanation does not hold there. Its insensitivity to fine
+scrambling (finding 7) instead suggests that TRIBE uses long context in STS without caring whether
+that context is in a coherent order.
+
+![Context sweep](results/narratives/context_sweep.png)
 
 ## How it works
 

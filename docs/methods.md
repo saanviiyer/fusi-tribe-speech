@@ -96,7 +96,10 @@ are nested). The authors' recommended exclusions are applied by dropping those p
 (sub-066, 317, 333, 335), leaving 22 per group, 400 TRs per run. ROIs: the Destrieux regions above
 plus angular gyrus and precuneus.
 
-TRIBE v2 (full mode, A100, float32) predicts each version from its audio. Prediction row *t* is fMRI
+TRIBE v2 (full mode, A100, float32) predicts each version from its audio. Its predictions are passed
+through the temporal part of the Narratives nuisance model (cosine high-pass at 128 s, first- and
+second-order polynomial trends) before any comparison, so neither side carries slow drift the other
+cannot. Prediction row *t* is fMRI
 at *t* + 5 s; one extra shift, fitted once on Heschl's gyrus in the intact story and shared by all
 versions, is +3 TR (+4.5 s), most likely the scan start relative to the stimulus file.
 
@@ -119,6 +122,13 @@ r(TRIBE, listener) on all 44 intact listeners with the shared lag; saturation co
 punctuation, keeps the word's own sentence last and intact, and reorders the earlier sentences
 with a fixed seed per word. The shuffled run's predictions correlate 0.956 with the ordered run
 across all values. Fit change is paired over the 44 intact listeners.
+
+**Exploratory: timescales** (`narratives-timescales`, not reported as a finding). Integrated
+autocorrelation of the human group response and of TRIBE's (filtered) prediction per region, and the
+fraction of variance slower than 50 s in the part of the group response TRIBE captures versus misses.
+After matched filtering, the part TRIBE misses carries less slow variance than the part it captures
+in auditory and temporal regions; in angular gyrus and precuneus it leans slower, without reaching
+significance. Results in `results/narratives/timescales.tsv`.
 
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
@@ -154,6 +164,7 @@ Things that changed the analysis, in the order they came up.
 | 17 | Step 3 bootstrap biased | Resampling people with replacement put duplicates in both split-half halves, inflating the noise ceiling; point estimates fell outside their intervals | Per-listener paired comparison: r(TRIBE, listener) vs r(other listeners, listener), bootstrap over people |
 | 18 | Finding 7 over-interpreted | I first described TRIBE's STS and MTG as "a shorter-timescale region" from the scrambling result alone. The context sweep shows TRIBE's STS fit keeps improving to 1,024 words | Finding 7 rewritten; the short-memory reading is kept only for precuneus (and MTG), where the sweep supports it |
 | 19 | Second explanation for finding 7 also wrong | After the context sweep I suggested TRIBE's STS uses long context "without caring whether it is in coherent order". Shuffling the earlier sentences in its context lowers its STS fit by 0.028 [−0.034, −0.020] | Withdrawn; finding 9 reports the test. Why TRIBE's STS fit held up under fine scrambling remains open |
+| 20 | TRIBE predictions not filtered like the Narratives data | The "clean" data had a 128 s cosine high-pass, polynomial trends, motion and CompCor regressed out; TRIBE's predictions kept slow drift the data cannot contain (found when TRIBE's predicted time courses looked slower than any brain response) | TRIBE predictions now pass through the same cosine high-pass and polynomial terms (`tribe_timecourses`, test in `tests/test_narratives.py`). Fits rise by ~40%. Findings 7 to 9 rerun: the STS and MTG fine-scrambling gaps (the subject of entries 18 and 19) no longer reach significance; the precuneus gap, the context sweep and the order effects hold |
 
 ## 4. Known limitations
 

@@ -110,13 +110,39 @@ def subjects_by_group(participants_tsv: Path, exclude: set[str]) -> dict[str, li
     return out
 
 
-def tribe_timecourses(pred_path: Path, n_tr: int, masks: dict, offset_s: float) -> dict[str, np.ndarray]:
+HIGH_PASS_S = 128.0   # Narratives "clean" data: discrete cosine high-pass, 128 s cutoff
+
+
+def temporal_filter_basis(n_tr: int, tr: float = TR, cutoff_s: float = HIGH_PASS_S) -> np.ndarray:
+    """The temporal part of the Narratives nuisance model: discrete cosine high-pass basis
+    (with constant) plus first- and second-order polynomial trends."""
+    from nilearn.glm.first_level import make_first_level_design_matrix
+
+    frame_times = np.arange(n_tr) * tr
+    cos = make_first_level_design_matrix(frame_times, events=None, drift_model="cosine",
+                                         high_pass=1.0 / cutoff_s).to_numpy()
+    t = np.linspace(-1, 1, n_tr)
+    return np.column_stack([cos, t, 1.5 * t ** 2 - 0.5])
+
+
+def matched_filter(x: np.ndarray, basis: np.ndarray) -> np.ndarray:
+    beta, *_ = np.linalg.lstsq(basis, x, rcond=None)
+    return x - basis @ beta
+
+
+def tribe_timecourses(pred_path: Path, n_tr: int, masks: dict, offset_s: float,
+                      filter_like_data: bool = True) -> dict[str, np.ndarray]:
+    """TRIBE ROI predictions on the fMRI frame grid. By default they get the same temporal
+    filtering as the Narratives "clean" data (cosine high-pass at 128 s, polynomial trends),
+    so neither side carries slow drift the other cannot."""
     d = np.load(pred_path)
     t = d["starts"] + offset_s                       # when each predicted sample is measured
     frame_times = np.arange(n_tr) * TR
+    basis = temporal_filter_basis(n_tr) if filter_like_data else None
     out = {}
     for roi, m in masks.items():
-        out[roi] = np.interp(frame_times, t, d["preds"][:, m].mean(axis=1))
+        x = np.interp(frame_times, t, d["preds"][:, m].mean(axis=1))
+        out[roi] = matched_filter(x, basis) if filter_like_data else x
     return out
 
 
@@ -480,3 +506,89 @@ def context_order_test(cfg: Config, n_boot: int = 5000) -> pd.DataFrame:
     fig.savefig(res / "context_order.png", dpi=200)
     plt.close(fig)
     return out
+
+
+SLOW_HZ = 0.02     # periods longer than 50 s: the timescale of narrative events
+
+
+def acf_timescale(x: np.ndarray, tr: float = TR) -> float:
+    """Integrated autocorrelation up to its first zero crossing, in seconds."""
+    x = zscore(x)
+    n = len(x)
+    acf = np.correlate(x, x, mode="full")[n - 1:] / n
+    first_neg = np.flatnonzero(acf <= 0)
+    stop = first_neg[0] if len(first_neg) else n
+    return float(acf[:stop].sum() * tr)
+
+
+def slow_fraction(x: np.ndarray, tr: float = TR, cutoff: float = SLOW_HZ) -> float:
+    """Fraction of a signal's variance at frequencies below `cutoff`."""
+    from scipy.signal import periodogram
+
+    f, pxx = periodogram(zscore(x), fs=1 / tr)
+    keep = f > 0
+    return float(pxx[keep & (f < cutoff)].sum() / pxx[keep].sum())
+
+
+def timescale_analysis(cfg: Config, n_boot: int = 2000) -> pd.DataFrame:
+    """Intact story: does TRIBE's prediction change as slowly as the human group response,
+    and is the slow part of the human response the part TRIBE misses?"""
+    intact, masks, roi_names, lag = _intact_setup(cfg)
+    pred = tribe_timecourses(cfg.output_dir / "predictions" / "full" / "notthefallintact.npz",
+                             intact.shape[1], masks, cfg.insilico.tribe_offset_s)
+    sl = slice(max(lag, 0), intact.shape[1] + min(lag, 0))
+    rng = np.random.default_rng(0)
+    n = len(intact)
+
+    def decompose(group: np.ndarray, p: np.ndarray):
+        s = zscore(group)
+        a = float(s @ p / (p @ p))
+        return a * p, s - a * p          # captured by TRIBE, missed by TRIBE
+
+    rows = []
+    for k, roi in enumerate(roi_names):
+        p = np.roll(zscore(pred[roi]), lag)[sl]
+        ts = intact[:, sl, k]
+
+        def stats(idx):
+            group = ts[idx].mean(0)
+            cap, miss = decompose(group, p)
+            return (acf_timescale(group), slow_fraction(group), slow_fraction(cap), slow_fraction(miss))
+
+        point = stats(np.arange(n))
+        boots = np.array([stats(rng.integers(0, n, n)) for _ in range(n_boot)])
+        lo, hi = np.percentile(boots, [2.5, 97.5], axis=0)
+        miss_minus_cap = boots[:, 3] - boots[:, 2]
+        mlo, mhi = np.percentile(miss_minus_cap, [2.5, 97.5])
+        rows.append({"roi": roi,
+                     "timescale_human_s": point[0], "timescale_human_lo": lo[0], "timescale_human_hi": hi[0],
+                     "timescale_tribe_s": acf_timescale(p),
+                     "slow_frac_human": point[1], "slow_frac_tribe_pred": slow_fraction(p),
+                     "slow_frac_captured": point[2], "slow_frac_missed": point[3],
+                     "missed_minus_captured": point[3] - point[2], "mmc_lo": mlo, "mmc_hi": mhi})
+    out = pd.DataFrame(rows)
+    res = cfg.results_dir / "narratives"
+    res.mkdir(parents=True, exist_ok=True)
+    out.round(4).to_csv(res / "timescales.tsv", sep="\t", index=False)
+    _plot_timescales(out, res / "timescales.png")
+    return out
+
+
+def _plot_timescales(df: pd.DataFrame, out_png: Path) -> None:
+    fig, (a, b) = plt.subplots(1, 2, figsize=(13, 4.2), layout="constrained")
+    x = np.arange(len(df))
+    a.bar(x - 0.18, df.timescale_human_s, 0.34, color="#c0392b", label="human group response")
+    a.errorbar(x - 0.18, df.timescale_human_s, yerr=[df.timescale_human_s - df.timescale_human_lo,
+               df.timescale_human_hi - df.timescale_human_s], fmt="none", ecolor="k", capsize=2)
+    a.bar(x + 0.18, df.timescale_tribe_s, 0.34, color="#14707c", label="TRIBE v2 prediction")
+    a.set_xticks(x, df.roi)
+    a.set(ylabel="Intrinsic timescale (s)", title="How slowly each region's response changes (intact story)")
+    a.legend(frameon=False, fontsize=8)
+    b.bar(x - 0.18, df.slow_frac_captured, 0.34, color="#14707c", label="part TRIBE captures")
+    b.bar(x + 0.18, df.slow_frac_missed, 0.34, color="#7f8c8d", label="part TRIBE misses")
+    b.set_xticks(x, df.roi)
+    b.set(ylabel=f"Fraction of variance slower than {1 / SLOW_HZ:.0f} s",
+          title="Where the slow fluctuations of the human response are")
+    b.legend(frameon=False, fontsize=8)
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)

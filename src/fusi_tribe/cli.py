@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("narratives-compare", help="Recompute TRIBE vs human change from saved ROI time courses")
     sub.add_parser("narratives-context", help="How much text context TRIBE needs, region by region (Narratives intact)")
     sub.add_parser("narratives-order", help="Does TRIBE use the order of earlier sentences? (Narratives intact)")
+    sub.add_parser("narratives-timescales", help="Intrinsic timescales and what TRIBE misses (Narratives intact)")
     sub.add_parser("report", help="Cross-modality figures")
     args = ap.parse_args(argv)
     cfg = load_config(args.config)
@@ -92,6 +93,9 @@ def main(argv: list[str] | None = None) -> None:
     elif args.step == "narratives-order":
         from .narratives.analysis import context_order_test
         print(context_order_test(cfg).round(3).to_string(index=False))
+    elif args.step == "narratives-timescales":
+        from .narratives.analysis import timescale_analysis
+        print(timescale_analysis(cfg).round(3).to_string(index=False))
     elif args.step == "report":
         from .report import mode_comparison, stimulus_spectrograms, timing_comparison
         stimulus_spectrograms(cfg)

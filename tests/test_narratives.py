@@ -37,3 +37,22 @@ def test_subject_correlations_rank_a_true_predictor_above_noise():
     r_true, r_others = subject_correlations(ts, signal, lag=0)
     r_noise, _ = subject_correlations(ts, rng.normal(size=300), lag=0)
     assert r_true.mean() > 0.5 and abs(r_noise.mean()) < 0.1 and r_others.mean() > 0.5
+
+
+def test_acf_timescale_and_slow_fraction_rank_slow_above_fast_signals():
+    from fusi_tribe.narratives.analysis import acf_timescale, slow_fraction
+    rng = np.random.default_rng(5)
+    fast = rng.normal(size=400)
+    slow = np.convolve(rng.normal(size=440), np.ones(40) / 40, mode="valid")[:400]
+    assert acf_timescale(slow) > 5 * acf_timescale(fast)
+    assert slow_fraction(slow) > slow_fraction(fast)
+
+
+def test_matched_filter_removes_slow_drift_and_keeps_fast_signal():
+    from fusi_tribe.narratives.analysis import matched_filter, temporal_filter_basis
+    n = 400
+    tt = np.arange(n) * 1.5
+    fast = np.sin(2 * np.pi * tt / 20.0)            # 20 s period, well above the 128 s cutoff
+    drift = 3.0 * (tt / tt[-1]) ** 2 + np.cos(2 * np.pi * tt / 600.0)
+    out = matched_filter(fast + drift, temporal_filter_basis(n))
+    assert np.corrcoef(out, fast)[0, 1] > 0.98

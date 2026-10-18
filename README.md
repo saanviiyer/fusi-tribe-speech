@@ -183,8 +183,7 @@ the intact one, and the coarse and fine groups are different people.
 
 ![TRIBE vs real brains](results/narratives/tribe_vs_human.png)
 
-**8. How much context TRIBE uses, region by region: too little in precuneus, plenty but
-order-blind in STS.** TRIBE gives its language model each word with up to 1,024 preceding words.
+**8. How much context TRIBE uses, region by region: too little in precuneus, plenty in STS.** TRIBE gives its language model each word with up to 1,024 preceding words.
 I reran it on the intact "Not the Fall" story with that window cut to 1, 8, 32 and 128 words, and
 with no text at all, then measured the fit to all 44 listeners. The regions sort into four groups:
 
@@ -202,12 +201,26 @@ This changes how finding 7 reads. In human listeners, the precuneus integrates i
 the longest stretches of a story, and it lost the most consistency when the story was scrambled.
 TRIBE's precuneus prediction saturates at about 8 words, and its fit to listeners dropped much less
 under scrambling. Both results point the same way: TRIBE gives the precuneus a far shorter memory
-than people have. STS is different. TRIBE's STS prediction keeps improving with up to 1,024 words of
-context, so the short-window explanation does not hold there. Its insensitivity to fine
-scrambling (finding 7) instead suggests that TRIBE uses long context in STS without caring whether
-that context is in a coherent order.
+than people have. STS is different: TRIBE's STS prediction keeps improving with up to 1,024 words
+of context, so a short window does not explain why its fit held up under fine scrambling.
 
 ![Context sweep](results/narratives/context_sweep.png)
+
+**9. TRIBE's STS and angular gyrus use the order of earlier sentences; its precuneus does not.**
+To test whether TRIBE's long context in STS depends on order, I kept the full 1,024-word context
+but shuffled the order of the earlier sentences inside each word's context, leaving the word's own
+sentence intact. Fit to the 44 listeners on the intact story, shuffled minus ordered: STS −0.028
+[−0.034, −0.020], angular gyrus −0.024 [−0.031, −0.016], MTG −0.014 [−0.021, −0.006]; precuneus,
+IFG, PT and STG show no reliable change; Heschl's gyrus improves (+0.015). In STS, scrambling the
+context removes about half of the fit that text adds there (+0.056 over audio alone).
+
+So TRIBE's STS does use narrative order, which rules out the explanation I first proposed for
+finding 7. A remaining candidate is that the part of the STS response listeners stop sharing under
+fine scrambling is a part TRIBE does not capture to begin with; this is not yet tested. The
+precuneus result is consistent across the two analyses: its prediction needs about 8 words of
+context and is indifferent to the order of earlier sentences.
+
+![Context order](results/narratives/context_order.png)
 
 ## How it works
 

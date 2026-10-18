@@ -115,6 +115,11 @@ audio-only run. A check confirmed truncation changes the predictions (correlatio
 r(TRIBE, listener) on all 44 intact listeners with the shared lag; saturation compares the
 1,024-word fit with each shorter window, paired over listeners.
 
+**Context order.** `run-tribe --shuffle-context` splits each word's context at sentence-ending
+punctuation, keeps the word's own sentence last and intact, and reorders the earlier sentences
+with a fixed seed per word. The shuffled run's predictions correlate 0.956 with the ordered run
+across all values. Fit change is paired over the 44 intact listeners.
+
 **Retention** (`insilico/analysis.py`). Per block and ROI (Destrieux atlas regions), amplitude =
 mean prediction from onset + 4 s to offset + 3 s, minus the mean over silent frames ≥ 8 s after
 any block. Retention = mean control amplitude / mean speech amplitude within the same run.
@@ -148,6 +153,7 @@ Things that changed the analysis, in the order they came up.
 | 16 | Layer analysis: first text similarity was an artifact | Rotated and reversed transcripts (mostly hallucinated words) scored ~0.95 against the true passage at layers 2-4, far above the 0.42 different-passage floor. A few Llama dimensions with very large activations dominate mean-pooled vectors | Every dimension z-scored across blocks before the cosine; a true-words sanity check scores 1.00. Audio CKA also reported with frame loudness regressed out, since frame-matched CKA rewards a shared envelope; the reversed-speech result survives (0.89-0.94) |
 | 17 | Step 3 bootstrap biased | Resampling people with replacement put duplicates in both split-half halves, inflating the noise ceiling; point estimates fell outside their intervals | Per-listener paired comparison: r(TRIBE, listener) vs r(other listeners, listener), bootstrap over people |
 | 18 | Finding 7 over-interpreted | I first described TRIBE's STS and MTG as "a shorter-timescale region" from the scrambling result alone. The context sweep shows TRIBE's STS fit keeps improving to 1,024 words | Finding 7 rewritten; the short-memory reading is kept only for precuneus (and MTG), where the sweep supports it |
+| 19 | Second explanation for finding 7 also wrong | After the context sweep I suggested TRIBE's STS uses long context "without caring whether it is in coherent order". Shuffling the earlier sentences in its context lowers its STS fit by 0.028 [−0.034, −0.020] | Withdrawn; finding 9 reports the test. Why TRIBE's STS fit held up under fine scrambling remains open |
 
 ## 4. Known limitations
 

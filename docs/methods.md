@@ -48,7 +48,7 @@ surface (20,484 vertices, 1 Hz) from audio, transcribed text and video, using Wa
 after each stimulus second (`data.neuro.offset: 5.0`), so prediction row *t* is fMRI at *t* + 5 s;
 the analysis puts rows back on the stimulus clock.
 
-**Stimuli** (`insilico/stimuli.py`). Fourteen original ~65-word narrative passages
+**Stimuli** (`insilico/stimuli.py`). Fourteen AI-generated ~65-word narrative passages
 (`insilico/passages.py`), synthesised with macOS `say` (voice Samantha, 140 wpm, 16 kHz) and
 placed on the exact block timing of the fUSI run. Speech blocks always hold intact speech; the
 condition sets what fills the Audio-only blocks (one fixed set of seven passages, so conditions

@@ -24,3 +24,12 @@ def test_truncate_context_keeps_target_and_n_preceding_words():
     assert truncate_context("a b c d e", 2) == "c d e"
     assert truncate_context("a b", 5) == "a b"
     assert truncate_context("a b c", 0) == "c"
+
+
+def test_shuffle_context_keeps_current_sentence_and_sentence_set():
+    from fusi_tribe.insilico.tribe import shuffle_context_sentences
+    ctx = "One fish. Two fish? Red fish! Blue fish swims"
+    out = shuffle_context_sentences(ctx, seed=3)
+    assert out.endswith("Blue fish swims")
+    assert sorted(out.removesuffix(" Blue fish swims").split(" ")) == sorted("One fish. Two fish? Red fish!".split(" "))
+    assert shuffle_context_sentences("no full stop here", seed=1) == "no full stop here"

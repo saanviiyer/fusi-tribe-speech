@@ -428,3 +428,55 @@ def _plot_context(df: pd.DataFrame, rois: list[str], out_png: Path) -> None:
     ax.legend(frameon=False, fontsize=8, ncol=2)
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
+
+
+def _intact_setup(cfg: Config):
+    from ..insilico.analysis import roi_masks
+    from nilearn import datasets
+
+    z = np.load(cfg.output_dir / "narratives_roi_timeseries.npz")
+    roi_names = [str(r) for r in z["roi_names"]]
+    intact = np.concatenate([z[f"{g}__notthefallintact"] for g in GROUPS])
+    masks = roi_masks(cfg.output_dir / "atlas")
+    atlas = datasets.fetch_atlas_surf_destrieux(data_dir=str(cfg.output_dir / "atlas"), verbose=0)
+    labels = [str(lab) for lab in atlas["labels"]]
+    both = np.concatenate([atlas["map_left"], atlas["map_right"]])
+    for roi, names in EXTRA_ROIS.items():
+        masks[roi] = np.isin(both, [labels.index(n) for n in names])
+    return intact, {r: masks[r] for r in roi_names}, roi_names, int(z["lag"])
+
+
+def context_order_test(cfg: Config, n_boot: int = 5000) -> pd.DataFrame:
+    """Full 1,024-word context, earlier sentences shuffled vs in order: paired fit change per region."""
+    intact, masks, roi_names, lag = _intact_setup(cfg)
+    root = cfg.output_dir / "predictions"
+    p_order = tribe_timecourses(root / "full" / "notthefallintact.npz", intact.shape[1], masks, cfg.insilico.tribe_offset_s)
+    p_shuf = tribe_timecourses(root / "full_ctxshuffled" / "notthefallintact.npz", intact.shape[1], masks,
+                               cfg.insilico.tribe_offset_s)
+    rng = np.random.default_rng(0)
+    rows = []
+    for k, roi in enumerate(roi_names):
+        r_o, _ = subject_correlations(intact[:, :, k], p_order[roi], lag)
+        r_s, _ = subject_correlations(intact[:, :, k], p_shuf[roi], lag)
+        d = r_s - r_o
+        idx = rng.integers(0, len(d), (n_boot, len(d)))
+        lo, hi = np.percentile(d[idx].mean(axis=1), [2.5, 97.5])
+        rows.append({"roi": roi, "r_ordered": float(r_o.mean()), "r_shuffled": float(r_s.mean()),
+                     "change": float(d.mean()), "ci_lo": float(lo), "ci_hi": float(hi)})
+    out = pd.DataFrame(rows)
+    res = cfg.results_dir / "narratives"
+    res.mkdir(parents=True, exist_ok=True)
+    out.round(4).to_csv(res / "context_order.tsv", sep="\t", index=False)
+    fig, ax = plt.subplots(figsize=(8, 3.8), layout="constrained")
+    x = np.arange(len(out))
+    sig = (out.ci_lo > 0) | (out.ci_hi < 0)
+    for i, row in out.iterrows():
+        ax.bar(i, row.change, 0.6, color="#14707c", alpha=1.0 if sig[i] else 0.35)
+    ax.errorbar(x, out.change, yerr=[out.change - out.ci_lo, out.ci_hi - out.change], fmt="none", ecolor="k", capsize=3)
+    ax.axhline(0, color="k", lw=0.8)
+    ax.set_xticks(x, out.roi)
+    ax.set(ylabel="Change in correlation with each listener",
+           title="Shuffling the order of earlier sentences in TRIBE's 1,024-word context")
+    fig.savefig(res / "context_order.png", dpi=200)
+    plt.close(fig)
+    return out

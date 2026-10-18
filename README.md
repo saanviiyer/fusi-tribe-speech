@@ -303,10 +303,13 @@ configs/   tests/   docs/   results/ (committed figures and tables)
 
 ## Data and attribution
 
-The fUSI recording and the original preprocessing helpers (`fusiproc_utils3.py`, adapted in
-`fusi/preprocess.py`) were provided as lab sample data and are not redistributed here. TRIBE v2
-is © Meta Platforms, Inc. and used under its own licence. The speech passages in
-`insilico/passages.py` were written for this project.
+The fUSI recording, its block design (`task_events.tsv`) and the original preprocessing helpers
+(`fusiproc_utils3.py`, adapted in `fusi/preprocess.py`) were shared by a functional ultrasound lab
+as sample data and are not redistributed here; I did not design or run that experiment, and its
+original audio was not available. The speech passages in `insilico/passages.py` were generated
+with an AI assistant for this project and read by macOS text-to-speech. The real-brain test uses
+the Narratives dataset (Nastase et al. 2021, OpenNeuro ds002345, CC0). TRIBE v2 is © Meta
+Platforms, Inc. and used under its own licence.
 
 ## License
 

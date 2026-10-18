@@ -197,17 +197,36 @@ def truncate_context(context: str, n_words: int) -> str:
     return " ".join(words[-(n_words + 1):])
 
 
+def shuffle_context_sentences(context: str, seed: int) -> str:
+    """Reorder the earlier sentences of a word's context; keep its own sentence last and intact.
+
+    The context ends with the target word. Its own sentence is everything after the last
+    sentence-ending punctuation, so local syntax is untouched and only narrative order changes.
+    """
+    import re
+
+    parts = re.split(r"(?<=[.!?])\s+", str(context).strip())
+    earlier, current = parts[:-1], parts[-1]
+    if len(earlier) > 1:
+        order = np.random.default_rng(seed).permutation(len(earlier))
+        earlier = [earlier[i] for i in order]
+    return " ".join(earlier + [current])
+
+
 def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None,
-              context_words: int | None = None) -> Path:
+              context_words: int | None = None, shuffle_context: bool = False) -> Path:
     from tribev2.demo_utils import get_audio_and_text_events
 
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
     stim_dir = cfg.output_dir / "stimuli"
     manifest = json.loads((stim_dir / "manifest.json").read_text())
-    if context_words is not None and mode != "full":
-        raise ValueError("--context-words needs --mode full")
-    out_dir = cfg.output_dir / "predictions" / (mode if context_words is None else f"full_ctx{context_words}")
+    if (context_words is not None or shuffle_context) and mode != "full":
+        raise ValueError("--context-words and --shuffle-context need --mode full")
+    folder = mode if context_words is None else f"full_ctx{context_words}"
+    if shuffle_context:
+        folder += "_ctxshuffled"
+    out_dir = cfg.output_dir / "predictions" / folder
     out_dir.mkdir(parents=True, exist_ok=True)
     model, device = load_tribe(cfg.output_dir / "tribe_cache")
     if mode == "full":
@@ -228,6 +247,10 @@ def run_tribe(cfg: Config, mode: str, conditions: list[str] | None = None,
             is_word = events.type == "Word"
             events.loc[is_word, "context"] = events.loc[is_word, "context"].map(
                 lambda c: truncate_context(c, context_words))
+        if shuffle_context:
+            is_word = events.type == "Word"
+            events.loc[is_word, "context"] = [shuffle_context_sentences(c, i)
+                                              for i, c in enumerate(events.loc[is_word, "context"])]
         words = events[events.type == "Word"]
         total_s = manifest["total_s"]
         if len(words) and (words.start.max() > total_s or words.duplicated(["start", "text"]).any()):

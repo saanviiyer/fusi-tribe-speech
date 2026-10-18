@@ -1,4 +1,4 @@
-"""Original narrative passages used as speech stimuli (written for this project).
+"""Narrative passages used as speech stimuli (AI-generated for this project).
 
 Fourteen passages: one per block in task_events.tsv. Each is long enough
 (~65 words, 19 s or more at 140 words per minute) to fill the longest block (19 s);
